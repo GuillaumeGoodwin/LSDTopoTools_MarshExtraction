@@ -64,8 +64,10 @@ from DEM_functions import ENVI_raster_binary_from_2d_array
 
 Gauges=["BOU", "FEL", "CRO", "SHE", "WOR", "HEY", "HIN"] # ALL gauges by tidal range
 #Gauges=["CRO", "SHE", "WOR", "HEY", "HIN"] # ALL gauges by tidal range
+
 #Gauges=["BOU", "HEY", "HIN"] # ALL gauges by tidal range
 
+#Gauges=["SHE"]
 
 Nodata_value = -9999
 
@@ -90,27 +92,27 @@ for gauge in Gauges:
     Reference, post_Reference, envidata_Reference =  ENVI_raster_binary_to_2d_array ("Input/Reference/%s/%s_marsh_DEM_clip.bil" % (gauge,gauge), gauge)
 
 
-    #rint "Preparing input data"
-    #print " Clipping DEM raster"
-    #sourcefile = "Input/Topography/%s/%s_DEM_WFILT.bil" % (gauge,gauge)
-    #cutfile = "Input/Reference/%s/%s_domain.shp" % (gauge,gauge)
-    #destinationfile = "Input/Topography/%s/%s_DEM_WFILT2.bil" % (gauge,gauge)
-    #os.system("gdalwarp -overwrite -of ENVI -cutline " + cutfile + " -crop_to_cutline " + sourcefile + " " +  destinationfile)
-    #print " Clipping slope raster"
-    #sourcefile = "Input/Topography/%s/%s_slope.bil" % (gauge,gauge)
-    #cutfile = "Input/Reference/%s/%s_domain.shp" % (gauge,gauge)
-    #destinationfile = "Input/Topography/%s/%s_slope2.bil" % (gauge,gauge)
-    #os.system("gdalwarp -overwrite -of ENVI -cutline " + cutfile + " -crop_to_cutline " + sourcefile + " " +  destinationfile)
-    #print " Clipping curvature raster"
-    #sourcefile = "Input/Topography/%s/%s_curvature.bil" % (gauge,gauge)
-    #cutfile = "Input/Reference/%s/%s_domain.shp" % (gauge,gauge)
-    #destinationfile = "Input/Topography/%s/%s_curvature2.bil" % (gauge,gauge)
-    #os.system("gdalwarp -overwrite -of ENVI -cutline " + cutfile + " -crop_to_cutline " + sourcefile + " " +  destinationfile)
-    #print " Clipping hillshade raster"
-    #sourcefile = "Input/Topography/%s/%s_hs.bil" % (gauge,gauge)
-    #cutfile = "Input/Reference/%s/%s_domain.shp" % (gauge,gauge)
-    #destinationfile = "Input/Topography/%s/%s_hs2.bil" % (gauge,gauge)
-    #os.system("gdalwarp -overwrite -of ENVI -cutline " + cutfile + " -crop_to_cutline " + sourcefile + " " +  destinationfile)
+    """print "Preparing input data"
+    print " Clipping DEM raster"
+    sourcefile = "Input/Topography/%s/%s_DEM_WFILT.bil" % (gauge,gauge)
+    cutfile = "Input/Reference/%s/%s_domain.shp" % (gauge,gauge)
+    destinationfile = "Input/Topography/%s/%s_DEM_WFILT.bil" % (gauge,gauge)
+    os.system("gdalwarp -overwrite -of ENVI -cutline " + cutfile + " -crop_to_cutline " + sourcefile + " " +  destinationfile)
+    print " Clipping slope raster"
+    sourcefile = "Input/Topography/%s/%s_slope.bil" % (gauge,gauge)
+    cutfile = "Input/Reference/%s/%s_domain.shp" % (gauge,gauge)
+    destinationfile = "Input/Topography/%s/%s_slope.bil" % (gauge,gauge)
+    os.system("gdalwarp -overwrite -of ENVI -cutline " + cutfile + " -crop_to_cutline " + sourcefile + " " +  destinationfile)
+    print " Clipping curvature raster"
+    sourcefile = "Input/Topography/%s/%s_curvature.bil" % (gauge,gauge)
+    cutfile = "Input/Reference/%s/%s_domain.shp" % (gauge,gauge)
+    destinationfile = "Input/Topography/%s/%s_curvature.bil" % (gauge,gauge)
+    os.system("gdalwarp -overwrite -of ENVI -cutline " + cutfile + " -crop_to_cutline " + sourcefile + " " +  destinationfile)
+    print " Clipping hillshade raster"
+    sourcefile = "Input/Topography/%s/%s_hs.bil" % (gauge,gauge)
+    cutfile = "Input/Reference/%s/%s_domain.shp" % (gauge,gauge)
+    destinationfile = "Input/Topography/%s/%s_hs.bil" % (gauge,gauge)
+    os.system("gdalwarp -overwrite -of ENVI -cutline " + cutfile + " -crop_to_cutline " + sourcefile + " " +  destinationfile)"""
 
 
 

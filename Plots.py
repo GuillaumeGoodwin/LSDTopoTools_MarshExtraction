@@ -55,6 +55,7 @@ from DEM_functions import Open_tide_stats
 from DEM_functions import ENVI_raster_binary_to_2d_array
 from DEM_functions import ENVI_raster_binary_from_2d_array
 from DEM_functions import add_subplot_axes
+from DEM_functions import Distribution
 
 
 #------------------------------------------------------------------
@@ -117,8 +118,8 @@ for gauge in Gauges:
     Scarps, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Output/%s/%s_Scarps.bil" % (gauge,gauge), gauge)
     print " Loading Platforms"
     Platform, post_Slope, envidata_Slope =  ENVI_raster_binary_to_2d_array ("Output/%s/%s_Marsh.bil" % (gauge,gauge), gauge)
-    #print " Loading Confusion"
-    #Confusion_matrix, post_Curvature, envidata_Curvature =  ENVI_raster_binary_to_2d_array ("Output/%s/%s_Confusion_DEM.bil" % (gauge,gauge), gauge)
+    print " Loading Confusion"
+    Confusion_matrix, post_Curvature, envidata_Curvature =  ENVI_raster_binary_to_2d_array ("Output/%s/%s_Confusion_DEM.bil" % (gauge,gauge), gauge)
 
 
     print "Loading performance files"
@@ -127,12 +128,25 @@ for gauge in Gauges:
     with open ("Output/%s/%s_Metrix.pkl" % (gauge,gauge), 'rb') as input_file:
         Metrix = cPickle.load(input_file)
 
+        
+        
+    # Here you classify by tidal range
     Metrix_gauges[i,0] = np.mean (Metric2_tide[3])-np.mean (Metric2_tide[0])
+    
+    # Here you classify by relief
+    Metrix_gauges[i,0] = np.amax(DEM) - np.amin(DEM[DEM>Nodata_value])
+    
+
+    
     for j in np.arange(1,5,1):
         Metrix_gauges[i,j] = Metrix[j-1]
 
 
 
+        
+        
+    
+        
 
     Relief = DEM-np.amin(DEM[DEM > Nodata_value])
     Rel_relief = Relief/np.amax(Relief)
@@ -211,7 +225,25 @@ for gauge in Gauges:
 
 
     # Scarps colourmap
-    #Scarps[Scarps > 0] =  Slope [Scarps > 0]
+    
+    Scarp_slope = Slope[Scarps > 0]
+    Scarp_DEM = DEM[Scarps > 0]
+    
+    Scarp_relslope = Scarp_slope/np.amax(Scarp_slope)
+    Scarp_relDEM = Scarp_DEM/np.amax(Scarp_DEM)
+    
+    #Option 1: repeat this product like for the search space
+    Scarps[Scarps > 0] =  Scarp_slope * Scarp_DEM
+    #Scarps[Scarps > 0] =  Scarp_DEM
+    
+    #Option 2:
+    #Scarps[Scarps > 0] =  Scarp_relslope * Scarp_relDEM
+    
+    
+
+   
+    Scarps_bins, Scarps_hist = Distribution(Scarps,0)
+
     #Scarps[Scarps == 0] = 0.00001
     Void = np.where (Slope == Nodata_value)
     Scarps[Void] = Nodata_value
@@ -222,10 +254,10 @@ for gauge in Gauges:
 
 
 
-
-
-    """# Platform map colourmap
-    #Platform[Platform > 0] = DEM [Platform > 0]
+    # Platform map colourmap
+    Platform[Platform > 0] = DEM [Platform > 0]
+    
+    """
     Void = np.where (DEM == Nodata_value)
     Platform[Void] = Nodata_value
 
@@ -240,49 +272,101 @@ for gauge in Gauges:
 
 
     # Confusion map colourmap
-    #palette_Confusion = copy(plt.cm.RdYlGn)
-    #palette_Confusion.set_bad(alpha = 0.0)
-    #Confusion_matrix = np.ma.masked_where(Confusion_matrix <= Nodata_value, Confusion_matrix)
+    palette_Confusion = copy(plt.cm.RdYlGn)
+    palette_Confusion.set_bad(alpha = 0.0)
+    Confusion_matrix = np.ma.masked_where(Confusion_matrix <= Nodata_value, Confusion_matrix)
 
 
     #---------------------------------------------------------------------------
     #Paper Plots
     fig=plt.figure(11, facecolor='White',figsize=[30,15])
     ax = plt.subplot2grid((1,2),(0,0),colspan=1, rowspan=2)
-    ax.set_title('Slope (from polynomial fit)', fontsize = 22)
+    #ax.set_title('Scarp relief = %g' % (np.amax(Scarp_DEM)-np.amin(Scarp_DEM)), fontsize = 22)
+    #ax.set_title('Slope (from polynomial fit)', fontsize = 22)
+    ax.set_title('Platform', fontsize = 22)
     ax.set_xlabel('X-distance from origin (m)', fontsize = 18)
     ax.set_ylabel('Y-distance from origin (m)', fontsize = 18)
-    Map = ax.imshow(Rel_relief, interpolation='None', cmap=palette_Slope, vmin=0, vmax=1)#, norm=colors.Normalize(vmin=Zmin, vmax=Zmax))
+    
+
+    #Map = ax.plot(Scarps_bins, Scarps_hist)
+    
+    #Map = ax.imshow(Rel_relief, interpolation='None', cmap=palette_Slope, vmin=0, vmax=1)#, norm=colors.Normalize(vmin=Zmin, vmax=Zmax))
     #Map = ax.imshow(Crossover, interpolation='None', cmap=palette_Slope, vmin=0, vmax=1)#, norm=colors.Normalize(vmin=Zmin, vmax=Zmax))
     #Map = ax.imshow(Search_space, interpolation='None', cmap=palette_Slope, vmin=0, vmax=1)#, norm=colors.Normalize(vmin=Zmin, vmax=Zmax))
 
-    #Map = ax.imshow(Rel_relief, interpolation='None', cmap=palette_Rel_relief,  vmin=0, vmax=1)#, norm=colors.Normalize(vmin=Smin, vmax=Smax))
-    #cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
-    #cbar.set_label('Slope (m/m)', fontsize = 20)
+    Map = ax.imshow(Platform, interpolation='None', vmin = 0)#, cmap=palette_Rel_relief)#,  vmin=0, vmax=1)#, norm=colors.Normalize(vmin=Smin, vmax=Smax))
+    cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
+    cbar.set_label('Platform elevation (m)', fontsize = 20)
+    #cbar.set_label('Relative relief (m)', fontsize = 20)
 
+    
+    
+    
+    
+    
+    
+    
+    #This is where you define the cutoff spot!
 
+    Platform_bins, Platform_hist = Distribution(Platform,0)
+
+    #1. Find the highest and biggest local maximum of frequency distribution
+    for j in range(1,len(Platform_hist)-1):
+        if Platform_hist[j]>0.9*max(Platform_hist) and Platform_hist[j]>Platform_hist[j-1] and Platform_hist[j]>Platform_hist[j+1]:
+            Index  = j
+
+    #2. Now run a loop from there toward lower elevations.
+    Counter = 0
+    for j in range(Index,0,-1):
+        # See if you cross the mean value. Count for how many indices you are under.
+        if Platform_hist[j] < mean(Platform_hist):
+            Counter = Counter + 1
+        # Reset the counter value if you go above average again
+        else:
+            Counter = 0 
+            
+        #If you stay long enough under (10 is arbitrary for now), initiate cutoff
+        if Counter > 10:
+            Cutoff = j
+            break
+            
+
+       
+    
+    
+    
+            
     ax = plt.subplot2grid((1,2),(0,1),colspan=1, rowspan=2)
     ax.set_title('Detected scarps', fontsize = 22)
-    ax.set_xlabel('X-distance from origin (m)', fontsize = 18)
+    #ax.set_xlabel('X-distance from origin (m)', fontsize = 18)
+    ax.set_xlabel('Elevation (m)', fontsize = 18)
     ax.set_ylabel('Y-distance from origin (m)', fontsize = 18)
+
+    Map = ax.plot(Platform_bins, Platform_hist)
+    Scatt = ax.scatter(Platform_bins[Index], Platform_hist[Index], c = 'red', alpha = 0.5)
+    ax.fill_between(Platform_bins, 0, mean(Platform_hist), alpha = 0.5)
+    
+    plt.axvline(x=Platform_bins[Cutoff], ymin=0, linewidth=0.1)
+    
     #Map = ax.imshow(Scarps, interpolation='None', cmap=plt.cm.gist_heat)
     #Map = ax.imshow(Rel_slope, interpolation='None', cmap=palette_Rel_slope,  vmin=0, vmax=1)#, norm=colors.Normalize(vmin=Zmin, vmax=Zmax))
     #Map = ax.imshow(Scarps, interpolation='None', cmap=palette_Scarps)#, norm=colors.Normalize(vmin=Smin, vmax=Smax))
     #cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
     #cbar.set_label('Scarp slope (m/m)', fontsize = 20)
 
-    plt.savefig('Output/Paper/%s_Paper_fig11.png' % (gauge))
+    #plt.savefig('Output/Paper/%s_Paper_Scarps6.png' % (gauge))
 
 
 
-
-
+    
+    
+    
     fig=plt.figure(13, facecolor='White',figsize=[60,30])
     ax = plt.subplot2grid((1,2),(0,0),colspan=1, rowspan=2)
     ax.set_title('Slope (from polynomial fit)', fontsize = 22)
     ax.set_xlabel('X-distance from origin (m)', fontsize = 18)
     ax.set_ylabel('Y-distance from origin (m)', fontsize = 18)
-    Map = ax.imshow(Platform, interpolation='None', cmap=plt.cm.gist_heat, vmin=0, vmax=3)
+    Map = ax.imshow(Platform, interpolation='None', cmap=plt.cm.gist_heat)#, vmin=0, vmax=3)
     cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
     cbar.set_label('XXXX', fontsize = 20)
 
@@ -294,8 +378,113 @@ for gauge in Gauges:
     cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
     cbar.set_label('Scarp slope (m/m)', fontsize = 20)
 
-    plt.savefig('Output/Paper/%s_Paper_fig15.png' % (gauge))
+    #plt.savefig('Output/Paper/%s_Paper_fig15.png' % (gauge))
 
+
+    
+    fig=plt.figure(14, facecolor='White',figsize=[15,15])
+    ax = plt.subplot2grid((1,1),(0,0),colspan=1, rowspan=2)
+    ax.set_title('Confusion map', fontsize = 22)
+    ax.set_xlabel('X-distance from origin (m)', fontsize = 18)
+    ax.set_ylabel('Y-distance from origin (m)', fontsize = 18)
+    Map = ax.imshow(Confusion_matrix, interpolation='None', cmap=palette_Confusion, norm=colors.Normalize(vmin=-2, vmax=2))
+    cbar = fig.colorbar(Map, ticks=[-2,-1,1,2], shrink=0.95, ax=ax)
+    #cbar.ax.set_yticklabels(['False Negative', 'False Positive', 'True Positive', 'True Negative'], rotation = 90, fontsize = 16)
+    cbar.ax.set_yticklabels(['FN', 'FP', 'TP', 'TN'], rotation = 90, fontsize = 16)
+    cbar.set_label('Confusion value', fontsize = 20)
+
+    #rect = [0.55,0.25,0.5,0.25]
+    #axbis = add_subplot_axes(ax,rect)
+    #TP=Performance[0]; TN=Performance[1]; FP=Performance[2]; FN=Performance[3]
+    #axbis.set_title("Correct marsh points: %d " % (100*(TP+TN)/(TP+TN+FP+FN)) + "%", fontsize = 18)
+    #sizes = Performance
+    #colormap = [plt.cm.RdYlGn(200), plt.cm.RdYlGn(256), plt.cm.RdYlGn(64), plt.cm.RdYlGn(0)]
+    #axbis.pie(sizes, autopct='%1.0f%%',shadow=False, startangle=90, colors = colormap)
+    #from matplotlib import font_manager as fm
+    #proptease = fm.FontProperties()
+    #proptease.set_size('xx-small')
+    #axbis.axis('equal')
+
+    #plt.savefig('Output/Paper/%s_Confusion_nopie.png' % (gauge))
+
+    
+    
+    
+    i = i + 1
+
+#-----------------------------------------------------------------------------------------
+#Global figure for performance
+Gauge_label= ["Shell Bay","Stour Estuary","Chalksock Lake","Campfield Marsh", "Dee Estuary", "Morecambe Bay", "Steart Point", "Severn Estuary"]
+
+
+Gauge_label=["BOU", "FEL", "CRO", "SHE", "WOR", "HEY", "HIN"]
+
+fig=plt.figure(15, facecolor='White',figsize=[20,8])
+ax = plt.subplot2grid((1,1),(0,0),colspan=1, rowspan=2)
+ax.set_xlabel('Spring tidal range (m)', fontsize = 18)
+ax.set_ylabel('Performance values', fontsize = 18)
+ax.grid(True)
+
+for i in range(len(Gauge_label)):
+    
+    print i
+    
+    #ax.axvline(Metrix_gauges[i,0], ymin=75, ymax=0.95, color='black', lw=5, alpha=0.6)
+    ax.annotate(Gauge_label[i], xy=(Metrix_gauges[i,0]-0.024, 0.62), xycoords='data',
+        horizontalalignment='left', verticalalignment='bottom', fontsize=rcParams['font.size']-0.5, color='black', rotation = 90)
+
+yerr_lower=np.zeros(len(Metrix_gauges[:,1]), dtype=np.float)
+yerr_upper=np.zeros(len(Metrix_gauges[:,1]), dtype=np.float)
+for i in range(len(Metrix_gauges[:,1])):
+    if Metrix_gauges[i,2] > Metrix_gauges[i,3]:
+        yerr_lower[i] =  Metrix_gauges[i,4] - Metrix_gauges[i,3]
+        yerr_upper[i] =  Metrix_gauges[i,2] - Metrix_gauges[i,4]
+    else:
+        yerr_lower[i] =  Metrix_gauges[i,4] - Metrix_gauges[i,2]
+        yerr_upper[i] =  Metrix_gauges[i,3] - Metrix_gauges[i,4]
+
+
+
+errorbar(Metrix_gauges[:,0], Metrix_gauges[:,4], yerr=[yerr_lower, yerr_upper], fmt='o', ecolor='k', capthick=2, elinewidth = 5, alpha=0.6)
+
+
+performance = Metrix_gauges[:,1]; performance_colour = performance**3
+ax.bar(Metrix_gauges[:,0]-0.09, Metrix_gauges[:,1], 0.18, alpha=0.6, color=plt.cm.RdYlGn(performance_colour),label='Accuracy')
+line, = ax.plot(Metrix_gauges[:,0], Metrix_gauges[:,2], 'oy', label='Reliability')
+line, = ax.plot(Metrix_gauges[:,0], Metrix_gauges[:,3], 'or', label='Sensitivity')
+line, = ax.plot(Metrix_gauges[:,0], Metrix_gauges[:,4], 'ow', label='F1')
+
+ax.set_xlim(2,13.5)
+ax.set_ylim(0.6,1.)
+box = ax.get_position()
+ax.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
+ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.1), fancybox=True, shadow=False, ncol=4)
+
+
+
+plt.savefig('Output/Paper/Global_Perf.png') 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+for i in [0,1]:
+    STOP
+
+   
+ 
+    
+    
+    
+
+"""
 
 
 
@@ -307,12 +496,6 @@ for gauge in Gauges:
 
     Search_x = Crossover
     Z_data = Search_x.ravel(); Z_data = Z_data[Z_data>0]
-
-
-    print Z_data
-    print max(Z_data)
-    print min(Z_data)
-
 
     step = (max(Z_data) - min(Z_data)) / 50
     #step = 0.05
@@ -362,14 +545,7 @@ ax.set_ylim(ymax = 0.4)
 #ax2.set_xlim(xmax = 0.2)
 #ax.set_ylim(ymax = 0.2)
 
-plt.savefig('Output/Paper/Crossover.png')
-
-
-
-
-
-for i in [0,1]:
-    STOP
+#plt.savefig('Output/Paper/Crossover.png')
 
 
 
@@ -590,104 +766,21 @@ ax5.grid(True)
 for i in [0,1]:
     STOP
 
+"""
 
 
 
-
-    #----------------------------------------------------------------
-    # Figure: Displays map, Pie chart and R/S values
-    #fig=plt.figure(1, facecolor='White',figsize=[50,50])
-
-
-    # Platform Map
-    """ax = plt.subplot2grid((4,2),(0,0),colspan=1, rowspan=2)
-    ax.set_title('a. Platform DEM')
-    Map = ax.imshow(Platform, interpolation='None', cmap=palette_platform, norm=colors.Normalize(vmin=Zmin, vmax=Zmax))
-    cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
-    cbar.set_label('elevation (m)')"""
+#----------------------------------------------------------------
+# Figure: Displays map, Pie chart and R/S values
+#fig=plt.figure(1, facecolor='White',figsize=[50,50])
 
 
-
-
-
-
-
-    # Confusion Map
-    """ax = plt.subplot2grid((4,2),(2,0),colspan=1, rowspan=2)
-    ax.set_title('b. Confusion map')
-
-    Map = ax.imshow(Reference, interpolation = 'None', cmap = palette_platform, alpha = 0.8)
-    Map = ax.imshow(Confusion_matrix, interpolation = 'None', cmap = palette_Confusion, alpha = 0.8, norm=colors.Normalize(vmin=-2.0, vmax=2.0))
-    cbar = fig.colorbar(Map, ticks=[-2,-1,1,2], shrink=0.95, ax=ax)
-    cbar.ax.set_yticklabels(['FN', 'FP', 'TP', 'TN'])
-    cbar.set_label('Confusion value')"""
-
-
-    """#Original DEM
-    ax = plt.subplot2grid((4,2),(0,0),colspan=1, rowspan=2)
-    ax.set_title('Original DEM')
-
-    DEM[DEM==Nodata_value]=0
-    Map = ax.imshow(DEM, interpolation='None', cmap=plt.cm.gist_earth)
-
-    cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
-    cbar.set_label('elevation (m)')
-
-
-
-    #Digitised platform
-    ax = plt.subplot2grid((4,2),(2,0),colspan=1, rowspan=2)
-    ax.set_title('Digitised Platform DEM')
-
-    Reference[Reference==1] = DEM[Reference==1]
-    Map = ax.imshow(Reference, interpolation='None', cmap=plt.cm.gist_earth)
-
-    cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
-    cbar.set_label('elevation (m)')
-
-
-
-
-    #Scarps
-    Scarps2 = np.copy(Scarps)
-    Scarps2[Scarps!=0] = Slope[Scarps!=0] * DEM[Scarps!=0]
-
-    ax = plt.subplot2grid((4,2),(0,1),colspan=1, rowspan=2)
-    ax.set_title('Scarps Slope')
-    Map = ax.imshow(Scarps2, interpolation='None', cmap=plt.cm.RdYlGn)
-    cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
-    cbar.set_label('Slope')"""
-
-
-    #Scarps2
-    """Scarps[Scarps!=0] = Slope[Scarps!=0] * DEM[Scarps!=0] / (np.mean(Metric2_tide[3])-np.mean(Metric2_tide[0]))
-
-    ax = plt.subplot2grid((4,2),(2,1),colspan=1, rowspan=2)
-    ax.set_title('Scarps Elevation')
-    Map = ax.imshow(Scarps, interpolation='None', cmap=plt.cm.RdYlGn)
-    cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
-    cbar.set_label('Elevation')"""
-
-
-    # Platform Map
-
-    #Platform[Platform>0] = DEM[Platform>0]
-
-
-    """ax = plt.subplot2grid((4,2),(2,1),colspan=1, rowspan=2)
-    ax.set_title('a. Platform DEM')
-    Map = ax.imshow(Platform, interpolation='None', cmap=plt.cm.gist_earth, norm=colors.Normalize(vmin=0.))
-    cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
-    cbar.set_label('elevation (m)')"""
-
-
-
-    #Search Space
-    """ax = plt.subplot2grid((4,2),(2,1),colspan=1, rowspan=2)
-    ax.set_title('Search Space')
-    Map = ax.imshow(Search_space, interpolation = 'None', cmap = plt.cm.gist_earth, alpha = 0.8)
-    cbar = fig.colorbar(Map, shrink=0.95, ax=ax)
-    cbar.set_label('Slope')"""
+# Platform Map
+"""ax = plt.subplot2grid((4,2),(0,0),colspan=1, rowspan=2)
+ax.set_title('a. Platform DEM')
+Map = ax.imshow(Platform, interpolation='None', cmap=palette_platform, norm=colors.Normalize(vmin=Zmin, vmax=Zmax))
+cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
+cbar.set_label('elevation (m)')"""
 
 
 
@@ -695,48 +788,131 @@ for i in [0,1]:
 
 
 
-    # Pie
-    """ ax = plt.subplot2grid((4,2),(0,1),colspan=1, rowspan=2)
-    ax.set_title('c. Proportional confusion distribution')
+# Confusion Map
+"""ax = plt.subplot2grid((4,2),(2,0),colspan=1, rowspan=2)
+ax.set_title('b. Confusion map')
 
-    labels = 'TP', 'TN', 'FP', 'FN'
-    sizes = Performance
-    colormap = [plt.cm.RdYlGn(200), plt.cm.RdYlGn(256), plt.cm.RdYlGn(64), plt.cm.RdYlGn(0)]
-    ax.pie(sizes, labels=labels, autopct='%1.0f%%',shadow=False, startangle=90, colors = colormap)
-    ax.axis('equal')
+Map = ax.imshow(Reference, interpolation = 'None', cmap = palette_platform, alpha = 0.8)
+Map = ax.imshow(Confusion_matrix, interpolation = 'None', cmap = palette_Confusion, alpha = 0.8, norm=colors.Normalize(vmin=-2.0, vmax=2.0))
+cbar = fig.colorbar(Map, ticks=[-2,-1,1,2], shrink=0.95, ax=ax)
+cbar.ax.set_yticklabels(['FN', 'FP', 'TP', 'TN'])
+cbar.set_label('Confusion value')"""
 
 
-    from matplotlib import font_manager as fm
-    proptease = fm.FontProperties()
-    proptease.set_size('xx-small')"""
+"""#Original DEM
+ax = plt.subplot2grid((4,2),(0,0),colspan=1, rowspan=2)
+ax.set_title('Original DEM')
 
-    # Metrix
-    """ax = plt.subplot2grid((4,3),(2,1),colspan=1, rowspan=2)
-    ax.set_title('d. Metrics')
+DEM[DEM==Nodata_value]=0
+Map = ax.imshow(DEM, interpolation='None', cmap=plt.cm.gist_earth)
 
-    metrix = ('Accuracy', 'Precision', 'Sensitivity', 'F1')
-    y_pos = np.arange(len(metrix))
-    performance = Metrix
-    performance_colour = performance**3
-
-    ax.barh(y_pos, performance, align='center', color=plt.cm.RdYlGn(performance_colour))
-    ax.set_yticks(y_pos); ax.set_yticklabels(metrix)
-    ax.invert_yaxis(); ax.invert_xaxis()
-    ax.set_xlabel('non-dimensional value')
-    plt.yticks(y_pos, metrix, rotation=90, fontsize=11)
-    ax.set_xlim(0,1)
-    plt.margins(0.1)"""
+cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
+cbar.set_label('elevation (m)')
 
 
 
+#Digitised platform
+ax = plt.subplot2grid((4,2),(2,0),colspan=1, rowspan=2)
+ax.set_title('Digitised Platform DEM')
 
-    #plt.savefig('Output/%s_Confusion.png' % (gauge))
-    #plt.savefig('Output/%s/%s_Confusion.png' % (gauge,gauge))
+Reference[Reference==1] = DEM[Reference==1]
+Map = ax.imshow(Reference, interpolation='None', cmap=plt.cm.gist_earth)
+
+cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
+cbar.set_label('elevation (m)')
 
 
 
 
-# Setting up the spectral analysis
+#Scarps
+Scarps2 = np.copy(Scarps)
+Scarps2[Scarps!=0] = Slope[Scarps!=0] * DEM[Scarps!=0]
+
+ax = plt.subplot2grid((4,2),(0,1),colspan=1, rowspan=2)
+ax.set_title('Scarps Slope')
+Map = ax.imshow(Scarps2, interpolation='None', cmap=plt.cm.RdYlGn)
+cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
+cbar.set_label('Slope')"""
+
+
+#Scarps2
+"""Scarps[Scarps!=0] = Slope[Scarps!=0] * DEM[Scarps!=0] / (np.mean(Metric2_tide[3])-np.mean(Metric2_tide[0]))
+
+ax = plt.subplot2grid((4,2),(2,1),colspan=1, rowspan=2)
+ax.set_title('Scarps Elevation')
+Map = ax.imshow(Scarps, interpolation='None', cmap=plt.cm.RdYlGn)
+cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
+cbar.set_label('Elevation')"""
+
+
+# Platform Map
+
+#Platform[Platform>0] = DEM[Platform>0]
+
+
+"""ax = plt.subplot2grid((4,2),(2,1),colspan=1, rowspan=2)
+ax.set_title('a. Platform DEM')
+Map = ax.imshow(Platform, interpolation='None', cmap=plt.cm.gist_earth, norm=colors.Normalize(vmin=0.))
+cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
+cbar.set_label('elevation (m)')"""
+
+
+
+#Search Space
+"""ax = plt.subplot2grid((4,2),(2,1),colspan=1, rowspan=2)
+ax.set_title('Search Space')
+Map = ax.imshow(Search_space, interpolation = 'None', cmap = plt.cm.gist_earth, alpha = 0.8)
+cbar = fig.colorbar(Map, shrink=0.95, ax=ax)
+cbar.set_label('Slope')"""
+
+
+
+
+
+
+
+# Pie
+""" ax = plt.subplot2grid((4,2),(0,1),colspan=1, rowspan=2)
+ax.set_title('c. Proportional confusion distribution')
+
+labels = 'TP', 'TN', 'FP', 'FN'
+sizes = Performance
+colormap = [plt.cm.RdYlGn(200), plt.cm.RdYlGn(256), plt.cm.RdYlGn(64), plt.cm.RdYlGn(0)]
+ax.pie(sizes, labels=labels, autopct='%1.0f%%',shadow=False, startangle=90, colors = colormap)
+ax.axis('equal')
+
+
+from matplotlib import font_manager as fm
+proptease = fm.FontProperties()
+proptease.set_size('xx-small')"""
+
+# Metrix
+"""ax = plt.subplot2grid((4,3),(2,1),colspan=1, rowspan=2)
+ax.set_title('d. Metrics')
+
+metrix = ('Accuracy', 'Precision', 'Sensitivity', 'F1')
+y_pos = np.arange(len(metrix))
+performance = Metrix
+performance_colour = performance**3
+
+ax.barh(y_pos, performance, align='center', color=plt.cm.RdYlGn(performance_colour))
+ax.set_yticks(y_pos); ax.set_yticklabels(metrix)
+ax.invert_yaxis(); ax.invert_xaxis()
+ax.set_xlabel('non-dimensional value')
+plt.yticks(y_pos, metrix, rotation=90, fontsize=11)
+ax.set_xlim(0,1)
+plt.margins(0.1)"""
+
+
+
+
+#plt.savefig('Output/%s_Confusion.png' % (gauge))
+#plt.savefig('Output/%s/%s_Confusion.png' % (gauge,gauge))
+
+
+
+
+"""# Setting up the spectral analysis
 print " Loading red"
 sourcefile = "Input/Ortho_BOU.tif"
 destinationfile = "Input/OUTPUT.bil"
@@ -824,4 +1000,4 @@ plt.savefig('Input/Bandspectrum_BOU.png')
 #new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_Band4, "Input/NDVI.bil", post_Band4, NDVI)
 
 
-STOP
+STOP"""

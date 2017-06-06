@@ -10,6 +10,32 @@ import cPickle
 
 
 
+
+#---------------------------------------------------------------
+# This function generates data distributions out of a 2D raster
+def Distribution(Data2D, Nodata_value):
+    
+
+    Data1D = Data2D.ravel()
+    
+    Max_distribution = max(Data1D)
+    Min_distribution = min(Data1D[Data1D>Nodata_value])
+    
+    bin_size = (Max_distribution - Min_distribution) / 100
+    
+    X_values = np.arange(Min_distribution, Max_distribution, bin_size)
+    
+    
+    hist, bins = np.histogram (Data1D, X_values, density=True)
+    hist=hist/sum(hist)
+    bins=bins[:-1]
+   
+    
+    return bins,hist
+
+
+
+
 #---------------------------------------------------------------
 # This function opens tidal stats data
 def Open_tide_stats (file_location, gauge):
@@ -228,7 +254,7 @@ def define_search_space (DEM, Slope, Nodata_value):
     # If this happens, your landscape is weird
     if np.amax(Search_space) == 0:
         print
-        print " ... Your search space is empty! This landscape is strange"
+        print " ... Your search space is empty! Are you sure there's a marsh platform here?"
         print
         STOP
 
@@ -526,9 +552,6 @@ def Clean_ridges (Peaks, DEM, Slope, Tidal_metric, Nodata_value):
         #KEEP THIS
         if np.amax(Kernel_DEM)/Threshold < 0.6:
             Peaks[x,y] = 0
-        else:
-            #THIS IS WHERE WE TEST STUFF... NOT CONCLUSIVE RIGHT NOW
-            Peaks[x,y] = Kernel_relief[4,4]-Kernel_slope[4,4]
 
 
 
@@ -589,7 +612,7 @@ def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value):
             Marsh[x,y] = 0
 
 
-    while Counter < 3:
+    while Counter < 100:
         Counter = Counter+1
         print ' ... Filling ... ', Counter
         Search_marsh = np.where (Marsh == Counter-1)
@@ -601,26 +624,17 @@ def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value):
             Kernel_marsh = kernel (Marsh, 3, x, y)
             Big_Kernel_DEM = kernel (DEM, 11, x, y)
             Big_Kernel_DEM_copy = kernel (DEM_copy, 11, x, y)
-
-
-
-            # You could use relative rlief here instead of an empirical tidal factor...
+            
 
             Conditions = np.zeros((len(Kernel_DEM), len(Kernel_DEM[0,:])), dtype = np.float)
             # 1: free space
-            Condition_1 = np.where (np.logical_and(Kernel_ridges == 0, Kernel_marsh == 0))
-            Conditions[Condition_1] = 1
+            Condition_1 = np.where (np.logical_and(Kernel_ridges == 0, Kernel_marsh == 0)); Conditions[Condition_1] = 1
             # 2: not topped
-            #Tidal_factor = 1.25-TR/100
-            Max_relief = np.amax(DEM_copy)-np.amin(DEM_copy[DEM_copy>Nodata_value])
-            Tidal_factor = 1.25- Max_relief/10
-
-
-
-
-            Condition_2 = np.where (np.logical_and(Kernel_DEM_copy > np.amax(Big_Kernel_DEM_copy)/Tidal_factor, Conditions == 1))
-            Conditions[Condition_2] = 2
-
+            Condition_2 = np.where (np.logical_and(Kernel_DEM_copy > np.amax(Big_Kernel_DEM_copy)-0.2, Conditions == 1)); Conditions[Condition_2] = 2
+            
+        
+            
+            #This is a distance thing to make sure you don't cross the ridges agin
             Here_be_ridges = np.where (Kernel_ridges != 0)
             Here_be_parents = np.where (Kernel_marsh == Counter-1)
 
@@ -646,13 +660,134 @@ def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value):
                     Marsh[x+X-1, y+Y-1] = Counter
                     DEM_copy[x+X-1, y+Y-1] = 0
 
+            """These conditions work! They generate a distribution where you can claerly see if there is some colouring on the tidal flat because you will see a peak at the lowest elevations. All you need to do now is identify that peak and cut it off!"""
+            
+ 
+
+    
+    
+    #This is where you define the cutoff spot!
+
+    Platform = np.copy(Marsh)
+    Platform[Platform > 0] = DEM [Platform > 0]
+    Platform_bins, Platform_hist = Distribution(Platform,0)
+
+    #1. Find the highest and biggest local maximum of frequency distribution
+    for j in range(1,len(Platform_hist)-1):
+        if Platform_hist[j]>0.9*max(Platform_hist) and Platform_hist[j]>Platform_hist[j-1] and Platform_hist[j]>Platform_hist[j+1]:
+            Index  = j
+
+    #2. Now run a loop from there toward lower elevations.
+    Counter = 0
+    for j in range(Index,0,-1):
+        # See if you cross the mean value. Count for how many indices you are under.
+        if Platform_hist[j] < np.mean(Platform_hist):
+            Counter = Counter + 1
+        # Reset the counter value if you go above average again
+        else:
+            Counter = 0 
+            
+        #If you stay long enough under (10 is arbitrary for now), initiate cutoff
+        if Counter > 10:
+            Cutoff = j
+            Cutoff_Z = Platform_bins[Cutoff]
+            break
+    
+    Marsh[Platform<Cutoff_Z] = 0
+
+   
+    
+    print " ... Fill high gaps ..."
+    Search_marsh_condition = np.zeros((len(DEM), len(DEM[0,:])), dtype = np.float)
+    Search_marsh = np.where (DEM >= Platform_bins[Index])
+    Search_marsh_condition [Search_marsh] = 1
+    Search_marsh_2 = np.where (np.logical_and(Marsh == 0, Search_marsh_condition == 1))
+    Marsh[Search_marsh_2] = 3
 
 
 
+        
+    for Iteration in np.arange(0,10,1):
+        Counter = 100
+        while Counter > 2:
+            Counter = Counter-1
+            print " ... Reverse filling ... ", Counter
+            Search_marsh = np.where (Marsh == Counter+1)
+            Non_filled = 0
+            for i in range(len(Search_marsh[0])):
+                x = Search_marsh[0][i]; y = Search_marsh[1][i]
+                Kernel_DEM = kernel (DEM, 3, x, y)
+                Kernel_ridges = kernel (Peaks, 3, x, y)
+                Kernel_marsh = kernel (Marsh, 3, x, y)
+
+                if Non_filled <len(Search_marsh[0]):
+                    if np.count_nonzero(Kernel_marsh) > 6:
+                        Condition = np.where (np.logical_and(Kernel_marsh == 0, Kernel_ridges == 0))
+                        for j in range(len(Condition[0])):
+                            X=Condition[0][j]; Y=Condition[1][j]
+                            Marsh[x+X-1, y+Y-1] = Counter
+                    else:
+                        Non_filled = Non_filled + 1
+                        
+    # Reapply the cutoff because the straight line thing is ugly
+    Platform = np.copy(Marsh)
+    Platform[Platform > 0] = DEM [Platform > 0]
+    Marsh[Platform<Cutoff_Z] = 0
+
+
+    
+    
+
+    # We fill in the wee holes
+    print " ... Filling ISOs ... "
+    Search_marsh = np.where (np.logical_and(Marsh == 0, Peaks == 0))
+    for i in range(len(Search_marsh[0])):
+        x = Search_marsh[0][i]; y = Search_marsh[1][i]
+        Kernel_marsh = kernel (Marsh, 3, x, y)
+        if np.count_nonzero(Kernel_marsh) == 8:
+            Marsh[x,y] = 105
+
+
+
+    # We get rid of scarps that do not have a marsh next to them
+    print " ... Eliminating false scarps ..."
+    Search_false_scarp = np.where (Peaks > 0)
+    for i in range(len(Search_false_scarp[0])):
+        x = Search_false_scarp[0][i]; y = Search_false_scarp[1][i]
+        Kernel_marsh = kernel (Marsh, 3, x, y)
+        if np.count_nonzero (Kernel_marsh) == 0:
+            Peaks[x, y] = 0
+
+
+    # We get rid of the sticky-outy bits
+    print " ... Shave the stubble ..."
+    Search_ridge = np.where (Peaks > 0)
+    for i in range(len(Search_ridge[0])):
+        x=Search_ridge[0][i]; y=Search_ridge[1][i]
+        Kernel_ridges = kernel (Peaks, 9, x, y)
+        if np.count_nonzero(Kernel_ridges) < 8:
+            Peaks[x,y] = 0
+
+
+    
+    
+    # We put the scarps in the platform
+    print " ... Filling ridges ..."
+    Search_side = np.where (Peaks > 0)
+    Marsh[Search_side] = 110
+
+    
+    
+    
+    Marsh[DEM == Nodata_value] = Nodata_value
+
+    return Marsh
+
+ 
     #-------------------------------------------
     # This is the cleaning process
 
-    print " ... Find the cutoff points ..."
+    """print " ... Find the cutoff points ..."
     Marsh_topo = np.copy(Marsh); Marsh_topo[Marsh>0] = DEM[Marsh>0]
     Z_data = Marsh_topo.ravel(); Z_data = Z_data[Z_data>0]
     Z_value = np.arange(min(Z_data), max(Z_data), 0.05)
@@ -683,16 +818,6 @@ def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value):
         Cutoff_Z_max = 0
 
 
-    #fig = plt.figure(3, facecolor='White',figsize=[9,9])
-    #ax5 = plt.subplot2grid((1,1),(0,0),colspan=1)
-    #ax5.plot(bins, hist)
-    #ax5.axvline(Cutoff_Z_min, color='green', lw=2, alpha=0.5)
-    #ax5.axvline(Cutoff_Z_max, color='green', lw=2, alpha=0.5)
-    #ax5.set_ylim(ymin=0)
-    #plt.show()
-    #plt.savefig('Output/0_%d_Platform_Distribution.png' % (TR))
-
-
 
 
     print " ... Salting isolated lowlands ..."
@@ -706,6 +831,26 @@ def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value):
             Marsh[x,y] = 0
 
 
+            
+    print " ... Eliminating false platforms ..."
+    Search_false_platform = np.where (np.logical_and(Marsh > 0, Marsh < 2))
+    for i in range(len(Search_false_platform[0])):
+        x = Search_false_platform[0][i]; y = Search_false_platform[1][i]
+        Kernel_marsh = kernel (Marsh, 5, x, y)
+        if np.amax(Kernel_marsh) < 3:
+            Marsh[x, y] = 0"""
+
+
+    #fig = plt.figure(3, facecolor='White',figsize=[9,9])
+    #ax5 = plt.subplot2grid((1,1),(0,0),colspan=1)
+    #ax5.plot(bins, hist)
+    #ax5.axvline(Cutoff_Z_min, color='green', lw=2, alpha=0.5)
+    #ax5.axvline(Cutoff_Z_max, color='green', lw=2, alpha=0.5)
+    #ax5.set_ylim(ymin=0)
+    #plt.show()
+    #plt.savefig('Output/0_%d_Platform_Distribution.png' % (TR))
+
+
 
 
     """print " ... Fill high gaps ..."
@@ -717,6 +862,7 @@ def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value):
 
 
 
+        
 
 
 
@@ -745,23 +891,7 @@ def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value):
 
 
 
-    """print " ... Filling ISOs ... "
-    Search_marsh = np.where (np.logical_and(Marsh == 0, Peaks == 0))
-    for i in range(len(Search_marsh[0])):
-        x = Search_marsh[0][i]; y = Search_marsh[1][i]
-        Kernel_marsh = kernel (Marsh, 3, x, y)
-        if np.count_nonzero(Kernel_marsh) == 8:
-            Marsh[x,y] = 10"""
 
-
-
-    print " ... Eliminating false platforms ..."
-    Search_false_platform = np.where (np.logical_and(Marsh > 0, Marsh < 2))
-    for i in range(len(Search_false_platform[0])):
-        x = Search_false_platform[0][i]; y = Search_false_platform[1][i]
-        Kernel_marsh = kernel (Marsh, 5, x, y)
-        if np.amax(Kernel_marsh) < 3:
-            Marsh[x, y] = 0
 
 
 
@@ -795,38 +925,6 @@ def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value):
 
 
 
-    """print " ... Salting isolated lowlands ..."
-    Search_marsh = np.where (np.logical_and(Marsh > 0, DEM < Cutoff_Z_min))
-
-    for size in np.arange(3,19,2):
-        for i in range(len(Search_marsh[0])):
-            x = Search_marsh[0][i]; y = Search_marsh[1][i]
-            Kernel_marsh = kernel (Marsh, size, x, y)
-            Big_Kernel_marsh = kernel (Marsh, size+2, x, y)
-
-            if np.count_nonzero(Kernel_marsh) == np.count_nonzero(Big_Kernel_marsh):
-                Marsh[x,y] = 0"""
-
-
-
-    """print " ... Eliminating false scarps ..."
-    Search_false_scarp = np.where (Peaks > 0)
-    for i in range(len(Search_false_scarp[0])):
-        x = Search_false_scarp[0][i]; y = Search_false_scarp[1][i]
-        Kernel_marsh = kernel (Marsh, 3, x, y)
-        if np.count_nonzero (Kernel_marsh) == 0:
-            Peaks[x, y] = 0"""
-
-
-    """print " ... Shave the stubble ..."
-    Search_ridge = np.where (Peaks > 0)
-    for i in range(len(Search_ridge[0])):
-        x=Search_ridge[0][i]; y=Search_ridge[1][i]
-        Kernel_ridges = kernel (Peaks, 9, x, y)
-        if np.count_nonzero(Kernel_ridges) < 8:
-            Peaks[x,y] = 0"""
-
-
 
     #print " ... Filling ridges ..."
     #Search_side = np.where (Peaks > 0)
@@ -856,10 +954,6 @@ def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value):
 
 
 
-
-    Marsh[DEM == Nodata_value] = Nodata_value
-
-    return Marsh
 
 
 
@@ -1207,20 +1301,19 @@ for i in range(len(Search_holes[0])):
 
 
 
+"""# But also we WHAT???
+for i in range(len(Search_side[0])):
+    x = Search_side[0][i]; y = Search_side[1][i]
+    Kernel_marsh = kernel (Marsh, 7, x, y)
+
+    if np.sum(Kernel_marsh) > 0 and  np.amin(Kernel_marsh[Kernel_marsh>0]) != Counter + 5:
+        if np.amin(Kernel_marsh) != 105:
+            Marsh[x, y] = 110"""
 
 
 
 
-
-
-
-    #Search_platform =np.zeros((len(Kernel_DEM), len(Kernel_DEM[0,:])), dtype = np.float)
-
-    #Filter_1 = np.where (np.logical_and(Kernel_ridges == 0, Kernel_marsh == 0))#, Kernel_DEM_copy == np.amax(Kernel_DEM_copy)))
-
-    #Search_platform[Filter_1] = 1
-
-    #Filter_2 = np.where (np.logical_and(Search_platform == 1, Kernel_DEM_copy > 0.85*min(Platform_elevations), Kernel_DEM_copy > Kernel_DEM_copy[1,1]))
+    
 
 
 
