@@ -734,9 +734,7 @@ def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value):
     Platform[Platform > 0] = DEM [Platform > 0]
     Marsh[Platform<Cutoff_Z] = 0
 
-
-    
-    
+ 
 
     # We fill in the wee holes
     print " ... Filling ISOs ... "
@@ -775,6 +773,49 @@ def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value):
     print " ... Filling ridges ..."
     Search_side = np.where (Peaks > 0)
     Marsh[Search_side] = 110
+    
+    
+    
+    
+    
+    
+    # Some of our platforms are patchy. Try filling them now that we have added the scarps
+    
+    
+    print " ... Fill high gaps ..."
+    Search_marsh_condition = np.zeros((len(DEM), len(DEM[0,:])), dtype = np.float)
+    Search_marsh = np.where (DEM >= Platform_bins[Index])
+    Search_marsh_condition [Search_marsh] = 1
+    Search_marsh_2 = np.where (np.logical_and(Marsh == 0, Search_marsh_condition == 1))
+    Marsh[Search_marsh_2] = 3
+    
+    for Iteration in np.arange(0,10,1):
+        Counter = 110
+        while Counter > 2:
+            Counter = Counter-1
+            print " ... Reverse filling ... ", Counter
+            Search_marsh = np.where (Marsh == Counter+1)
+            Non_filled = 0
+            for i in range(len(Search_marsh[0])):
+                x = Search_marsh[0][i]; y = Search_marsh[1][i]
+                Kernel_DEM = kernel (DEM, 3, x, y)
+                Kernel_ridges = kernel (Peaks, 3, x, y)
+                Kernel_marsh = kernel (Marsh, 3, x, y)
+
+                if Non_filled <len(Search_marsh[0]):
+                    if np.count_nonzero(Kernel_marsh) > 6:
+                        Condition = np.where (np.logical_and(Kernel_marsh == 0, Kernel_ridges == 0))
+                        for j in range(len(Condition[0])):
+                            X=Condition[0][j]; Y=Condition[1][j]
+                            Marsh[x+X-1, y+Y-1] = Counter
+                    else:
+                        Non_filled = Non_filled + 1
+                        
+    # Reapply the cutoff because the straight line thing is ugly
+    Platform = np.copy(Marsh)
+    Platform[Platform > 0] = DEM [Platform > 0]
+    Marsh[Platform<Cutoff_Z] = 0
+    
 
     
     
