@@ -15,8 +15,7 @@ matplotlib.use('Agg')
 import os
 import sys
 
-import matplotlib.mlab as mlab
-import matplotlib.pyplot as plt
+
 import numpy as np
 import functools
 import math as mt
@@ -25,29 +24,28 @@ import scipy as sp
 import scipy.stats as stats
 from datetime import datetime
 import cPickle
-from matplotlib import cm
+
 from pylab import *
 import functools
-import matplotlib.ticker as tk
-from matplotlib import rcParams
-from mpl_toolkits.axes_grid1.inset_locator import *
-import matplotlib.gridspec as gridspec
-from matplotlib.ticker import MultipleLocator, FormatStrFormatter
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+
 import itertools as itt
-import numpy as np
 from osgeo import gdal, osr
-import matplotlib.ticker as tk
-from matplotlib import rcParams
-from mpl_toolkits.axes_grid1.inset_locator import *
-import matplotlib.gridspec as gridspec
-from matplotlib.ticker import MultipleLocator, FormatStrFormatter
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 from osgeo import gdal, gdalconst
 from osgeo.gdalconst import *
 from copy import copy
+
+
+from matplotlib import cm
 import matplotlib.colors as colors
 import matplotlib.mlab as mlab
+import matplotlib.pyplot as plt
+import matplotlib.ticker as tk
+from matplotlib import rcParams
+from mpl_toolkits.axes_grid1.inset_locator import *
+import matplotlib.gridspec as gridspec
+from matplotlib.ticker import MultipleLocator, FormatStrFormatter
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
 
 #------------------------------------------------------------------
 # Import the marsh-finding functions
@@ -64,35 +62,28 @@ from DEM_functions import Distribution
 
 #------------------------------------------------------------------
 #These are the tide gauges next to the marshes we work on
-
 Gauges=["BOU", "FEL", "CRO", "SHE", "WOR", "HEY", "HIN"] # ALL gauges by tidal range
-#Gauges=["CRO", "SHE", "WOR", "HEY", "HIN"] # ALL gauges by tidal range
-#Gauges=["WOR", "HEY", "HIN"] # ALL gauges by tidal range
-
+Gauges=["BOU", "FEL", "CRO"] # ALL gauges by tidal range
 #Gauges=["BOU", "HEY", "HIN"] # ALL gauges by tidal range
 
 
 
-hist = []
-bins = []
 
-
-HIST=[]
-BINS=[]
+#------------------------------------------------------------------
+# These are some variables and arrays that need to be set up at the beginning
+hist = []; bins = []
+HIST=[]; BINS=[]
+histS = []; binsS = []
 
 Inflexion = np.zeros(len(Gauges), dtype = np.float)
 Inflexion_point = np.zeros(len(Gauges), dtype = np.float)
 
-
-histS = []
-binsS = []
-
 Nodata_value = -9999
-
-
-
-
 Metrix_gauges = np.zeros((len(Gauges),5), dtype=np.float)
+
+
+#------------------------------------------------------------------
+# This is where we load all the data we want to plot
 i=0
 
 for gauge in Gauges:
@@ -134,23 +125,20 @@ for gauge in Gauges:
     Metrix_gauges[i,0] = np.mean (Metric2_tide[3])-np.mean (Metric2_tide[0])
     
     # Here you classify by relief
-    Metrix_gauges[i,0] = np.amax(DEM) - np.amin(DEM[DEM>Nodata_value])
-    
-
+    #Metrix_gauges[i,0] = np.amax(DEM) - np.amin(DEM[DEM>Nodata_value])
     
     for j in np.arange(1,5,1):
         Metrix_gauges[i,j] = Metrix[j-1]
+    
 
-
-
-        
+    i = i + 1
         
     
         
 
-    Relief = DEM-np.amin(DEM[DEM > Nodata_value])
-    Rel_relief = Relief/np.amax(Relief)
-    Rel_relief[DEM == Nodata_value] = Nodata_value
+    #Relief = DEM-np.amin(DEM[DEM > Nodata_value])
+    #Rel_relief = Relief/np.amax(Relief)
+    #Rel_relief[DEM == Nodata_value] = Nodata_value
 
     #Scarps_relief = DEM-np.amin(DEM[DEM > Nodata_value])
     #Scarps_rel_relief = Scarps_relief/np.amax(Scarps_relief)
@@ -160,19 +148,19 @@ for gauge in Gauges:
 
 
 
-    Rel_slope = Slope/np.amax(Slope)
-    Rel_slope[Slope == Nodata_value] = Nodata_value
+    #Rel_slope = Slope/np.amax(Slope)
+    #Rel_slope[Slope == Nodata_value] = Nodata_value
 
     #Scarps_rel_slope = Slope/np.amax(Slope)
     #Scarps_rel_slope[Slope == Nodata_value] = Nodata_value
     #Scarps_rel_slope[Scarps == 0] = 0
 
 
-    Crossover = Rel_relief * Rel_slope
-    Crossover_copy = np.copy(Crossover)
-    Crossover[Search_space == 0] = 0
-    Crossover[DEM == Nodata_value] = Nodata_value
-    Crossover_copy[DEM == Nodata_value] = Nodata_value
+    #Crossover = Rel_relief * Rel_slope
+    #Crossover_copy = np.copy(Crossover)
+    #Crossover[Search_space == 0] = 0
+    #Crossover[DEM == Nodata_value] = Nodata_value
+    #Crossover_copy[DEM == Nodata_value] = Nodata_value
 
 
     #Scarps[Scarps>1]=0
@@ -273,11 +261,288 @@ for gauge in Gauges:
 
     # Confusion map colourmap
     palette_Confusion = copy(plt.cm.RdYlGn)
-    palette_Confusion.set_bad(alpha = 0.0)
+    palette_Confusion.set_bad('white', alpha = 0.0)
     Confusion_matrix = np.ma.masked_where(Confusion_matrix <= Nodata_value, Confusion_matrix)
 
 
-    #---------------------------------------------------------------------------
+#---------------------------------------------------------------------------
+#---------------------------------------------------------------------------
+#---------------------------------------------------------------------------
+"""Here are the plots for the paper"""
+
+#---------------------------------------------------------------------------
+# Figure 1: Those are pictures of saltings (a) and pioneer zones (b). Careful with that. Might be better as a later figure in the discussion.
+
+#---------------------------------------------------------------------------
+# Figure 2: This is a map of where our sites are from (a), complete with tidal range and distribution of elevations (b) and type of coast (c)
+
+#---------------------------------------------------------------------------
+# Figure 3: This is a figure of the definition of the search space. It has examples of DEMxSlope (a), a plot of where the cutoff is (b), and the resulting search space (c)
+#---------------------------------------------------------------------------
+# Figure 4: This one shows the construction of scarps. It has a diagram showing how we proceed (a), and a slopes array with local max and scarp order (b)
+
+#---------------------------------------------------------------------------
+# Figure 5: This one shows a diagram of the process (a) and an array with filled-in platform (b) and cleaned-platform(c)
+
+#---------------------------------------------------------------------------
+# Figure 6 [2col]: This one showcases the results as DEM (a), Marsh DEM (b) ad confusion map (c)
+
+
+"""BE AMBITIOUS: CAN YOU MAKE THIS 1 PLOT?
+YES YOU CAN, BE HAVING TWO EXTRA CONFUSIONS WITH DEMS OF A DIFFERENT COLOURSCALE!!!!"""
+
+
+fig=plt.figure(6, facecolor='White',figsize=[4.7,8])
+
+i = 0
+for gauge in Gauges:
+    
+    matplotlib.rc('xtick', labelsize=9) 
+    matplotlib.rc('ytick', labelsize=9)
+    
+    # Setup the plot space 
+    ax1 = plt.subplot2grid((3,2),(i,0),colspan=1, rowspan=1,axisbg='gray')
+    ax2 = plt.subplot2grid((3,2),(i,1),colspan=1, rowspan=1)
+    #if i == 0: 
+        #ax1.set_title('Platform DEM', fontsize = 12)
+        #ax2.set_title('Confusion map', fontsize = 12)
+    if i < len(Gauges)-1:
+        ax1.set_xticklabels([])
+        #ax2.set_xticklabels([])
+    else:
+        ax1.set_xlabel('distance(m)', fontsize = 9)
+        #ax2.set_xlabel('distance(m)', fontsize = 9)
+    
+    ax1.set_ylabel('distance(m)', fontsize = 9)
+    #ax2.set_yticklabels([])
+    
+    
+    
+    # Change tick size and position
+    majorLocator = MultipleLocator(100)
+    majorFormatter = FormatStrFormatter('%d')
+
+    ax1.xaxis.set_major_locator(majorLocator)
+    ax2.xaxis.set_major_locator(majorLocator)
+    ax1.yaxis.set_major_locator(majorLocator)
+    #ax1.xaxis.set_major_formatter(majorFormatter)
+
+    
+    # Load the relevant data
+    DEM, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Input/Topography/%s/%s_DEM_WFILT.bil" % (gauge,gauge), gauge)
+    Platform, post_Slope, envidata_Slope =  ENVI_raster_binary_to_2d_array ("Output/%s/%s_Marsh.bil" % (gauge,gauge), gauge)
+    Confusion_matrix, post_Curvature, envidata_Curvature =  ENVI_raster_binary_to_2d_array ("Output/%s/%s_Confusion_DEM.bil" % (gauge,gauge), gauge)
+    
+    
+    
+    # Plot the things  
+    # a/ Platform DEM 
+    Min_value = np.amin (DEM[DEM>Nodata_value])
+    DEM_mask = np.ma.masked_where(Platform == 0, DEM)
+    Map_DEM = ax1.imshow(DEM, interpolation='None', cmap=plt.cm.Greys, vmin=-5)
+    Map_DEM_mask = ax1.imshow(DEM_mask, interpolation='None', cmap=plt.cm.gist_earth, vmin=Min_value)
+    Platform[Platform > 0] = DEM [Platform > 0]
+    Map_MarshDEM = ax2.imshow(Platform, interpolation='None', cmap=plt.cm.gist_earth, vmin=Min_value)
+    
+    # b/ Confusion
+    Confusion_matrix2 = np.ma.masked_where(Confusion_matrix !=-2, Confusion_matrix)
+    Map_Confusion = ax1.imshow(Confusion_matrix2, interpolation='None', cmap=plt.cm.Blues, norm=colors.Normalize(vmin=-2, vmax=2))
+    
+    Confusion_matrix1 = np.ma.masked_where(Confusion_matrix !=-1, Confusion_matrix)
+    Map_Confusion2 = ax1.imshow(Confusion_matrix1, interpolation='None', cmap=plt.cm.pink, norm=colors.Normalize(vmin=-2, vmax=2))
+         
+
+        
+    # Only display the largest square from the top right corner
+    
+    
+    
+    # Annotate
+    
+    
+    
+    # Do the colourbars and legend boxes
+    
+    
+    
+    
+     
+        
+    i=i+1
+    
+
+fig.tight_layout()
+plt.savefig('Output/Paper/0_Fig6.png')
+
+
+STOP
+
+
+    
+    
+    
+#ax.set_title('Scarp relief = %g' % (np.amax(Scarp_DEM)-np.amin(Scarp_DEM)), fontsize = 22)
+#ax.set_title('Slope (from polynomial fit)', fontsize = 22)
+#ax.set_title('Platform', fontsize = 22)
+#ax.set_xlabel('X-distance from origin (m)', fontsize = 18)
+#ax.set_ylabel('Y-distance from origin (m)', fontsize = 18)
+
+
+"""#Map = ax.plot(Scarps_bins, Scarps_hist)
+
+#Map = ax.imshow(Rel_relief, interpolation='None', cmap=palette_Slope, vmin=0, vmax=1)#, norm=colors.Normalize(vmin=Zmin, vmax=Zmax))
+#Map = ax.imshow(Crossover, interpolation='None', cmap=palette_Slope, vmin=0, vmax=1)#, norm=colors.Normalize(vmin=Zmin, vmax=Zmax))
+#Map = ax.imshow(Search_space, interpolation='None', cmap=palette_Slope, vmin=0, vmax=1)#, norm=colors.Normalize(vmin=Zmin, vmax=Zmax))
+
+#Map = ax.imshow(Platform, interpolation='None', vmin = 0)#, cmap=palette_Rel_relief)#,  vmin=0, vmax=1)#, norm=colors.Normalize(vmin=Smin, vmax=Smax))
+#cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
+#cbar.set_label('Platform elevation (m)', fontsize = 20)
+#cbar.set_label('Relative relief (m)', fontsize = 20)
+
+
+
+
+
+
+
+
+#This is where you define the cutoff spot!
+
+Platform_bins, Platform_hist = Distribution(Platform,0)
+
+#1. Find the highest and biggest local maximum of frequency distribution
+for j in range(1,len(Platform_hist)-1):
+    if Platform_hist[j]>0.9*max(Platform_hist) and Platform_hist[j]>Platform_hist[j-1] and Platform_hist[j]>Platform_hist[j+1]:
+        Index  = j
+
+#2. Now run a loop from there toward lower elevations.
+Counter = 0
+for j in range(Index,0,-1):
+    # See if you cross the mean value. Count for how many indices you are under.
+    if Platform_hist[j] < mean(Platform_hist):
+        Counter = Counter + 1
+    # Reset the counter value if you go above average again
+    else:
+        Counter = 0 
+
+    #If you stay long enough under (10 is arbitrary for now), initiate cutoff
+    if Counter > 10:
+        Cutoff = j
+        break
+
+
+
+
+
+
+
+ax = plt.subplot2grid((1,2),(0,1),colspan=1, rowspan=2)
+ax.set_title('Detected scarps', fontsize = 22)
+#ax.set_xlabel('X-distance from origin (m)', fontsize = 18)
+ax.set_xlabel('Elevation (m)', fontsize = 18)
+ax.set_ylabel('Y-distance from origin (m)', fontsize = 18)
+
+Map = ax.plot(Platform_bins, Platform_hist)
+Scatt = ax.scatter(Platform_bins[Index], Platform_hist[Index], c = 'red', alpha = 0.5)
+ax.fill_between(Platform_bins, 0, mean(Platform_hist), alpha = 0.5)
+
+#plt.axvline(x=Platform_bins[Cutoff], ymin=0, linewidth=0.1)
+
+#Map = ax.imshow(Scarps, interpolation='None', cmap=plt.cm.gist_heat)
+#Map = ax.imshow(Rel_slope, interpolation='None', cmap=palette_Rel_slope,  vmin=0, vmax=1)#, norm=colors.Normalize(vmin=Zmin, vmax=Zmax))
+#Map = ax.imshow(Scarps, interpolation='None', cmap=palette_Scarps)#, norm=colors.Normalize(vmin=Smin, vmax=Smax))
+#cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
+#cbar.set_label('Scarp slope (m/m)', fontsize = 20)"""
+
+
+
+
+
+
+
+
+fig=plt.figure(13, facecolor='White',figsize=[60,30])
+ax = plt.subplot2grid((1,2),(0,0),colspan=1, rowspan=2)
+ax.set_title('Slope (from polynomial fit)', fontsize = 22)
+ax.set_xlabel('X-distance from origin (m)', fontsize = 18)
+ax.set_ylabel('Y-distance from origin (m)', fontsize = 18)
+Map = ax.imshow(Platform, interpolation='None', cmap=plt.cm.gist_heat)#, vmin=0, vmax=3)
+cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
+cbar.set_label('XXXX', fontsize = 20)
+
+ax = plt.subplot2grid((1,2),(0,1),colspan=1, rowspan=2)
+ax.set_title('Detected scarps', fontsize = 22)
+ax.set_xlabel('X-distance from origin (m)', fontsize = 18)
+ax.set_ylabel('Y-distance from origin (m)', fontsize = 18)
+Map = ax.imshow(Scarps, interpolation='None', cmap=palette_Scarps)#, vmin= 0, vmax=1)
+cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
+cbar.set_label('Scarp slope (m/m)', fontsize = 20)
+
+#plt.savefig('Output/Paper/%s_Paper_fig15.png' % (gauge))
+
+
+
+fig=plt.figure(14, facecolor='White',figsize=[15,15])
+ax = plt.subplot2grid((1,1),(0,0),colspan=1, rowspan=2)
+ax.set_title('Confusion map', fontsize = 22)
+ax.set_xlabel('X-distance from origin (m)', fontsize = 18)
+ax.set_ylabel('Y-distance from origin (m)', fontsize = 18)
+Map = ax.imshow(Confusion_matrix, interpolation='None', cmap=palette_Confusion, norm=colors.Normalize(vmin=-2, vmax=2))
+cbar = fig.colorbar(Map, ticks=[-2,-1,1,2], shrink=0.95, ax=ax)
+#cbar.ax.set_yticklabels(['False Negative', 'False Positive', 'True Positive', 'True Negative'], rotation = 90, fontsize = 16)
+cbar.ax.set_yticklabels(['FN', 'FP', 'TP', 'TN'], rotation = 90, fontsize = 16)
+cbar.set_label('Confusion value', fontsize = 20)
+
+#rect = [0.55,0.25,0.5,0.25]
+#axbis = add_subplot_axes(ax,rect)
+#TP=Performance[0]; TN=Performance[1]; FP=Performance[2]; FN=Performance[3]
+#axbis.set_title("Correct marsh points: %d " % (100*(TP+TN)/(TP+TN+FP+FN)) + "%", fontsize = 18)
+#sizes = Performance
+#colormap = [plt.cm.RdYlGn(200), plt.cm.RdYlGn(256), plt.cm.RdYlGn(64), plt.cm.RdYlGn(0)]
+#axbis.pie(sizes, autopct='%1.0f%%',shadow=False, startangle=90, colors = colormap)
+#from matplotlib import font_manager as fm
+#proptease = fm.FontProperties()
+#proptease.set_size('xx-small')
+#axbis.axis('equal')
+
+plt.savefig('Output/Paper/%s_Confusion_nopie2.png' % (gauge))
+
+
+
+
+
+
+#---------------------------------------------------------------------------
+# Figure 7: This one shows the different performances classified by tidal range (a), type of coast (b)
+
+#---------------------------------------------------------------------------
+# Figure 8: This one shows evolution of performance for degraded resolution. Look at relief in the thing too, or position within the tidal frame. Still in design
+
+
+
+
+
+
+for i in [0,1]:
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    
+    
+    
+    
     #Paper Plots
     fig=plt.figure(11, facecolor='White',figsize=[30,15])
     ax = plt.subplot2grid((1,2),(0,0),colspan=1, rowspan=2)
@@ -346,7 +611,7 @@ for gauge in Gauges:
     Scatt = ax.scatter(Platform_bins[Index], Platform_hist[Index], c = 'red', alpha = 0.5)
     ax.fill_between(Platform_bins, 0, mean(Platform_hist), alpha = 0.5)
     
-    plt.axvline(x=Platform_bins[Cutoff], ymin=0, linewidth=0.1)
+    #plt.axvline(x=Platform_bins[Cutoff], ymin=0, linewidth=0.1)
     
     #Map = ax.imshow(Scarps, interpolation='None', cmap=plt.cm.gist_heat)
     #Map = ax.imshow(Rel_slope, interpolation='None', cmap=palette_Rel_slope,  vmin=0, vmax=1)#, norm=colors.Normalize(vmin=Zmin, vmax=Zmax))
@@ -354,7 +619,7 @@ for gauge in Gauges:
     #cbar = fig.colorbar(Map, extend='both', shrink=0.95, ax=ax)
     #cbar.set_label('Scarp slope (m/m)', fontsize = 20)
 
-    #plt.savefig('Output/Paper/%s_Paper_Scarps6.png' % (gauge))
+    plt.savefig('Output/Paper/%s_Paper_Scarps7.png' % (gauge))
 
 
 
@@ -405,7 +670,7 @@ for gauge in Gauges:
     #proptease.set_size('xx-small')
     #axbis.axis('equal')
 
-    #plt.savefig('Output/Paper/%s_Confusion_nopie.png' % (gauge))
+    plt.savefig('Output/Paper/%s_Confusion_nopie2.png' % (gauge))
 
     
     
