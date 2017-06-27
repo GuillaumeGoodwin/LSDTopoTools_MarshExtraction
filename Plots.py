@@ -45,7 +45,6 @@ from mpl_toolkits.axes_grid1.inset_locator import *
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-
 from mpl_toolkits.basemap import Basemap, cm
 
 
@@ -56,6 +55,8 @@ from DEM_functions import ENVI_raster_binary_to_2d_array
 from DEM_functions import ENVI_raster_binary_from_2d_array
 from DEM_functions import add_subplot_axes
 from DEM_functions import Distribution
+
+from DEM_functions import define_search_space
 
 
 #------------------------------------------------------------------
@@ -278,13 +279,12 @@ Confusion_matrix = np.ma.masked_where(Confusion_matrix <= Nodata_value, Confusio
 # Figure 1: Those are pictures of saltings (a) and pioneer zones (b). Careful with that. Might be better as a later figure in the discussion.
 
 #---------------------------------------------------------------------------
-# Figure 2 [2col]: This is a map of where our sites are from (a), complete with tidal range and distribution of elevations (and slopes?) and types of coast (b)
-
+# Figure 2 [2col]: This is a map of where our sites are from (a), complete with tidal range and distribution of elevations (b)
 fig=plt.figure(2, facecolor='White',figsize=[4.7,4])
 matplotlib.rc('xtick', labelsize=9) 
 
 # First map the map
-ax1 = plt.subplot2grid((1,2),(0,0),colspan=1, rowspan=1,axisbg='white')
+ax1 = plt.subplot2grid((7,2),(0,0),colspan=1, rowspan=7, axisbg='white')
 
 # create Basemap
 m = Basemap(llcrnrlon=-6.5,llcrnrlat=49.5,urcrnrlon=3.5,urcrnrlat=59, resolution='i', projection='cass', lon_0=-4.36, lat_0=54.7)
@@ -292,11 +292,14 @@ m.drawcoastlines()
 m.drawparallels(np.arange(-40,61.,2.), labels=[1,0,0,0], fontsize = 9)
 m.drawmeridians(np.arange(-20.,21.,2.), labels=[0,0,1,0], fontsize = 9)
 
-
 # Plot the points on it
 lats = [50.6, 51.8, 52.9, 51.5, 54.9, 54.1, 51.15]
 lons = [-1.9, 1.13, 0.8, 0.5, -3.1, -2.8, -3.1]
 Metrix_gauges = np.zeros((len(Gauges),5), dtype=np.float)
+
+#this is the annotation of the plot number
+ax1.annotate('a.', xy=(0.90,0.98), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-1) 
+
 
 # Load the tidal data
 i=0
@@ -307,138 +310,61 @@ for gauge in Gauges:
 
 # Plot the points
 x, y = m(lons,lats)
-Scatt = ax1.scatter(x,y, s = 50, color=plt.cm.jet(0.1*Metrix_gauges[:,0]), alpha = 0.8, linewidth = 1)
+Scatt = ax1.scatter(x,y, s = 50, color=plt.cm.winter(0.1*Metrix_gauges[:,0]), alpha = 0.9, linewidth = 5)
 
-ax2 = fig.add_axes([0.125, 0.11, 0.352, 0.02])
-scheme = plt.cm.jet; norm = mpl.colors.Normalize(vmin=0, vmax=12)
+# Make a colourbar
+ax2 = fig.add_axes([0.125, 0.10, 0.352, 0.02])
+scheme = plt.cm.winter; norm = mpl.colors.Normalize(vmin=0, vmax=12)
 bounds = [0,2,4,6,8,10,12]
 cb = mpl.colorbar.ColorbarBase(ax2, cmap=scheme, norm=norm, ticks = bounds, orientation='horizontal')
 cb.set_label('Spring tidal range (m)', fontsize = 9)  
     
-    
-    
-    
-    
+
+
+
+
+
+
     
 # Then make the other plot
-ax3 = plt.subplot2grid((1,2),(0,1),colspan=1, rowspan=1,axisbg='white')
 matplotlib.rc('xtick', labelsize=9)
 matplotlib.rc('ytick', labelsize=9)
-
-ax3.set_xlabel('Elevation (m)', fontsize = 9)
-ax3.set_ylabel('Spring tidal range (m)', fontsize = 9)
-
+Annotations = ['b.1.','b.2.','b.3.','b.4.','b.5.','b.6.','b.7.']
 
 i=0
 for gauge in Gauges:
+    ax3 = plt.subplot2grid((7,2),(i,1),colspan=1, rowspan=1,axisbg='white')
     
+    ax3.set_xlim (0,8)
+    ax3.set_ylim (0, 0.1)
+    plt.yticks([0,0.04, 0.08], fontsize = 9)
+    if i == 6:
+        ax3.set_xlabel('Elevation (m)', fontsize = 9)
+    else:
+        ax3.set_xticklabels([])     
+    if i == 3:
+        ax3.set_ylabel('Frequency', fontsize = 9)
+    ax3.yaxis.tick_right()
+
+
     # Load the data
     DEM, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Input/Topography/%s/%s_DEM_WFILT.bil" % (gauge,gauge), gauge)
     Metric1_tide, Metric2_tide, Metric3_tide, Subsample = Open_tide_stats ("Input/Tide/%s/%s_" % (gauge,gauge), gauge)
     Metrix_gauges[i,0] = np.mean (Metric2_tide[3])-np.mean (Metric2_tide[0])
-    
+
     bins, hist = Distribution (DEM, Nodata_value)
-    ax3.plot( bins, 10*hist+Metrix_gauges[i,0], color=plt.cm.jet(0.1*Metrix_gauges[i,0]))    
+    Elevation_range = np.arange(0, max(bins), 0.1)
     
-
-    i=i+1 
-
-ax3.set_xlim (0,7)
-ax3.set_ylim (2,13)
-ax3.grid(True)
+    ax3.fill_between(Elevation_range, 0, 1, where=Elevation_range<=max(Metric2_tide[3]), facecolor='blue', alpha = 0.2, linewidth = 0)
+    ax3.fill_between(Elevation_range, 0, 1, where=Elevation_range<=np.mean(Metric2_tide[3]), facecolor='blue', alpha = 0.2, linewidth = 0)
+    ax3.fill_between(Elevation_range, 0, 1, where=Elevation_range<=np.mean(Metric2_tide[2]), facecolor='blue', alpha = 0.2, linewidth = 0)
     
+    ax3.plot( bins, hist, color=plt.cm.winter(0.1*Metrix_gauges[i,0]))
 
+    
+    ax3.annotate(Annotations[i], xy=(0.80,0.92), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-2) 
 
-"""np.random.seed(0)
-number_of_bins = 20
-
-# An example of three data sets to compare
-number_of_data_points = 387
-labels = ["A", "B", "C"]
-data_sets = [np.random.normal(0, 1, number_of_data_points),
-             np.random.normal(6, 1, number_of_data_points),
-             np.random.normal(-3, 1, number_of_data_points)]
-
-# Computed quantities to aid plotting
-hist_range = (np.min(data_sets), np.max(data_sets))
-binned_data_sets = [
-    np.histogram(d, range=hist_range, bins=number_of_bins)[0]
-    for d in data_sets
-]
-binned_maximums = np.max(binned_data_sets, axis=1)
-x_locations = np.arange(0, sum(binned_maximums), np.max(binned_maximums))
-
-# The bin_edges are the same for all of the histograms
-bin_edges = np.linspace(hist_range[0], hist_range[1], number_of_bins + 1)
-centers = 0.5 * (bin_edges + np.roll(bin_edges, 1))[:-1]
-heights = np.diff(bin_edges)
-
-for x_loc, binned_data in zip(x_locations, binned_data_sets):
-    lefts = x_loc - 0.5 * binned_data
-    ax.barh(centers, binned_data, height=heights, left=lefts)
-
-ax.set_xticks(x_locations)
-ax.set_xticklabels(labels)
-
-ax.set_ylabel("Data values")
-ax.set_xlabel("Data sets")
-"""
-
-"""
-
-
-
-
-Gauge_label= ["Shell Bay","Stour Estuary","Chalksock Lake","Campfield Marsh", "Dee Estuary", "Morecambe Bay", "Steart Point", "Severn Estuary"]
-
-
-fig=plt.figure(15, facecolor='White',figsize=[20,8])
-ax = plt.subplot2grid((1,1),(0,0),colspan=1, rowspan=2)
-ax.set_xlabel('Spring tidal range (m)', fontsize = 18)
-ax.set_ylabel('Performance values', fontsize = 18)
-ax.grid(True)
-
-for i in range(len(Gauge_label)):
-    #ax.axvline(Metrix_gauges[i,0], ymin=75, ymax=0.95, color='black', lw=5, alpha=0.6)
-    ax.annotate(Gauge_label[i], xy=(Metrix_gauges[i,0]-0.065, 0.62), xycoords='data',
-        horizontalalignment='left', verticalalignment='bottom', fontsize=rcParams['font.size']-0.5, color='black', rotation = 90)
-
-yerr_lower=np.zeros(len(Metrix_gauges[:,1]), dtype=np.float)
-yerr_upper=np.zeros(len(Metrix_gauges[:,1]), dtype=np.float)
-for i in range(len(Metrix_gauges[:,1])):
-    if Metrix_gauges[i,2] > Metrix_gauges[i,3]:
-        yerr_lower[i] =  Metrix_gauges[i,4] - Metrix_gauges[i,3]
-        yerr_upper[i] =  Metrix_gauges[i,2] - Metrix_gauges[i,4]
-    else:
-        yerr_lower[i] =  Metrix_gauges[i,4] - Metrix_gauges[i,2]
-        yerr_upper[i] =  Metrix_gauges[i,3] - Metrix_gauges[i,4]
-
-
-
-errorbar(Metrix_gauges[:,0], Metrix_gauges[:,4], yerr=[yerr_lower, yerr_upper], fmt='o', ecolor='k', capthick=2, elinewidth = 5, alpha=0.6)
-
-
-performance = Metrix_gauges[:,1]; performance_colour = performance**3
-ax.bar(Metrix_gauges[:,0]-0.09, Metrix_gauges[:,1], 0.18, alpha=0.6, color=plt.cm.RdYlGn(performance_colour),label='Accuracy')
-line, = ax.plot(Metrix_gauges[:,0], Metrix_gauges[:,2], 'oy', label='Reliability')
-line, = ax.plot(Metrix_gauges[:,0], Metrix_gauges[:,3], 'or', label='Sensitivity')
-line, = ax.plot(Metrix_gauges[:,0], Metrix_gauges[:,4], 'ow', label='F1')
-
-ax.set_xlim(2,13.5)
-ax.set_ylim(0.6,1.)
-box = ax.get_position()
-ax.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
-ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.1), fancybox=True, shadow=False, ncol=4)
-
-
-"""
-
-
-
-
-
-
-
+    i=i+1
 
 
 
@@ -447,24 +373,119 @@ plt.savefig('Output/Paper/0_Fig2.png')
 
 
 
-STOP
-
-
-
-
-
-
-
-
-
-
 
 
 
 
 
 #---------------------------------------------------------------------------
-# Figure 3: This is a figure of the definition of the search space. It has examples of DEMxSlope (a), a plot of where the cutoff is (b), and the resulting search space (c)
+# Figure 3 [1col]: This is a figure of the definition of the search space. It has examples of DEMxSlope (a), a plot of where the cutoff is (b), and the resulting search space (c)
+fig=plt.figure(3, facecolor='White',figsize=[4.7,4])
+matplotlib.rc('xtick', labelsize=8)
+matplotlib.rc('ytick', labelsize=8) 
+
+# First plot a map of SlopexDEM (topleft)
+ax1 = plt.subplot2grid((2,5),(1,0), rowspan=1, colspan=2, axisbg='white')
+# Then show a search space (botleft)
+ax2 = plt.subplot2grid((2,5),(1,2), rowspan=1, colspan=2, axisbg='white')
+# Then show how we cut it (right)
+ax3 = plt.subplot2grid((2,5),(0,0), rowspan=1, colspan=5, axisbg='white')
+
+
+ax1.set_ylabel('Distance (m)', fontsize = 9)
+ax1.set_xlabel('Distance (m)', fontsize = 9)
+ax2.set_yticklabels([])
+ax2.set_xlabel('Distance (m)', fontsize = 9)
+ax3.set_ylabel('Distribution', fontsize = 9)
+ax3.set_xlabel('X-value (m)', fontsize = 9)
+
+ax3.set_ylim (0,0.3)
+ax3.set_xlim (0,0.15)
+
+
+#this is the annotation of the plot number
+bbox_props = dict(boxstyle="square,pad=0.1", alpha = 0, fc="white", ec="b", lw=0)
+ax1.text(10, 10, 'b1.', ha="left", va="top", rotation=0, size=9, bbox=bbox_props, color='white')
+ax2.text(10, 10, 'b2.', ha="left", va="top", rotation=0, size=9, bbox=bbox_props, color='white')
+ax3.annotate('a.', xy=(0.03,0.98), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']) 
+
+plt.margins(1)
+
+i=0
+for gauge in Gauges:
+    # Load the data
+    DEM, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Input/Topography/%s/%s_DEM_WFILT.bil" % (gauge,gauge), gauge)
+    Slope, post_Slope, envidata_Slope =  ENVI_raster_binary_to_2d_array ("Input/Topography/%s/%s_slope.bil" % (gauge,gauge), gauge)
+    
+    # Execute the search space script
+    Search_space, Crossover, bins, hist, Inflexion_point = define_search_space (DEM, Slope, Nodata_value)
+    Search_space[Search_space==1] = Crossover[Search_space==1]
+    
+ 
+    ax3.plot(bins, hist, color=plt.cm.winter(0.1*Metrix_gauges[i,0]))
+    Inflexion_bin = np.where(hist < Inflexion_point)
+    ax3.scatter (bins [min(Inflexion_bin[0])], Inflexion_point, c = 'r' )
+    
+    ax31 = plt.axes([0.5, 0.65, 0.4, 0.25])
+    ax31.set_ylim (0,0.1)
+    ax31.set_xlim (0,0.1)
+    
+    majorLocator = MultipleLocator(0.03)
+    majorFormatter = FormatStrFormatter('%d')   
+    ax31.xaxis.set_major_locator(majorLocator)
+    ax31.yaxis.set_major_locator(majorLocator)
+    
+    if i == 0:        
+        # Make the zoom
+        ax31.plot (bins,hist)
+        ax31.scatter (bins [min(Inflexion_bin[0])-1], Inflexion_point, c = 'r' )
+        
+        #Line = np.arange(0,1,-99/len(bins))
+        
+        #print Line
+        
+        #print
+        
+        
+        #print len(bins)
+        #print len(Line)
+        
+        #ax31.plot(bins, Line)
+        
+        # Maps now
+        # Set upthe colour scheme
+        Min_value = np.amin (Crossover[Crossover>Nodata_value])
+        Search_space_mask = np.ma.masked_where(Search_space == 0, Search_space)
+
+        # Plot the things
+        Map_X = ax1.imshow(Crossover, interpolation='None', cmap=plt.cm.gist_earth, vmin=-0.1, vmax=0.5)
+        Map_SS = ax2.imshow(Crossover, interpolation='None', cmap=plt.cm.gist_earth, vmin=-0.1, vmax=0.5)
+        Map_SS = ax2.imshow(Search_space_mask, interpolation='None', cmap=plt.cm.gist_heat, vmin=-0.1, vmax=0.5)
+        
+        # Make the colourbars
+        ax12 = fig.add_axes([0.76, 0.114, 0.02, 0.34])
+        ax22 = fig.add_axes([0.78, 0.114, 0.02, 0.34])
+
+        X_scheme = plt.cm.gist_earth; X_norm = mpl.colors.Normalize(vmin=-0.1, vmax=0.5)
+        SS_scheme = plt.cm.gist_heat; SS_norm = mpl.colors.Normalize(vmin=-0.1, vmax=0.5)
+        bounds = [0,0.25,0.5]
+        cb1 = mpl.colorbar.ColorbarBase(ax12, cmap=X_scheme, norm=X_norm, ticks = [], orientation='vertical')
+        cb2 = mpl.colorbar.ColorbarBase(ax22, cmap=SS_scheme, norm=SS_norm, ticks = bounds, orientation='vertical')
+        cb2.set_label('X-value (m)', fontsize = 9)
+        
+
+    
+        
+
+    i=i+1
+
+
+
+
+plt.savefig('Output/Paper/0_Fig3.png')
+STOP
+
+
 #---------------------------------------------------------------------------
 # Figure 4: This one shows the construction of scarps. It has a diagram showing how we proceed (a), and a slopes array with local max and scarp order (b)
 
@@ -472,13 +493,7 @@ STOP
 # Figure 5: This one shows a diagram of the process (a) and an array with filled-in platform (b) and cleaned-platform(c)
 
 #---------------------------------------------------------------------------
-# Figure 6 [2col]: This one showcases the results as DEM (a), Marsh DEM (b) ad confusion map (c)
-
-
-"""BE AMBITIOUS: CAN YOU MAKE THIS 1 PLOT?
-YES YOU CAN, BY HAVING TWO EXTRA CONFUSIONS WITH DEMS OF A DIFFERENT COLOURSCALE!!!!"""
-
-
+# Figure 6 [2col]: This one showcases the results in a combined way
 fig=plt.figure(6, facecolor='White',figsize=[4.7,7.5])
 
 # Set up the fonts and stuff
@@ -489,8 +504,7 @@ matplotlib.rc('ytick', labelsize=9)
 Annotations = ['a.','b.','c.','d.','e.','f.','g.']
 
 i = 0
-for gauge in Gauges:
-    
+for gauge in Gauges: 
     # Set up the plot space 
     if (-1)**i > 0:
         Plot_col = 0
@@ -511,13 +525,11 @@ for gauge in Gauges:
     ax1.xaxis.set_major_locator(majorLocator)
     ax1.yaxis.set_major_locator(majorLocator)
     
-
     # Load the relevant data
     DEM, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Input/Topography/%s/%s_DEM_WFILT.bil" % (gauge,gauge), gauge)
     Platform, post_Slope, envidata_Slope =  ENVI_raster_binary_to_2d_array ("Output/%s/%s_Marsh.bil" % (gauge,gauge), gauge)
     Confusion_matrix, post_Curvature, envidata_Curvature =  ENVI_raster_binary_to_2d_array ("Output/%s/%s_Confusion_DEM.bil" % (gauge,gauge), gauge)
-    
-    
+     
     # Set up the colour scheme
     Min_value = np.amin (DEM[DEM>Nodata_value])
     DEM_mask = np.ma.masked_where(Platform == 0, DEM)
@@ -528,14 +540,11 @@ for gauge in Gauges:
     Confusion_matrix2 = np.ma.masked_where(Confusion_matrix !=-2, Confusion_matrix) 
     Confusion_matrix2 [Confusion_matrix2 == -2] = DEM [Confusion_matrix2 == -2]
     
-    
     # Plot the things
     Map_TF = ax1.imshow(DEM, interpolation='None', cmap=plt.cm.Greys, vmin=-5, vmax=5)
     Map_Marsh = ax1.imshow(DEM_mask, interpolation='None', cmap=plt.cm.gist_earth, vmin=0, vmax=8)
     Map_FP = ax1.imshow(Confusion_matrix1, interpolation='None', cmap=plt.cm.Oranges, vmin=0, vmax=5)
     Map_FN = ax1.imshow(Confusion_matrix2, interpolation='None', cmap=plt.cm.Purples, vmin=0, vmax=5)
-         
-
         
     # Only display the largest square from the top right corner, and annotate
     bbox_props = dict(boxstyle="square,pad=0.1", fc="white", ec="b", lw=0)
@@ -574,13 +583,14 @@ cb4 = mpl.colorbar.ColorbarBase(ax5, cmap=FN_scheme, norm=FN_norm, ticks = bound
 cb4.set_label('Elevation (m)', fontsize = 9)
       
 ax2.annotate('True negatives', xy=(0.05,0.82), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-3)  
-ax3.annotate('True positives', xy=(0.65,0.82), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-3)  
+ax3.annotate('True positives', xy=(0.35,0.82), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-3)  
 ax4.annotate('False positives', xy=(0.05,0.82), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-3)  
 ax5.annotate('False negatives', xy=(0.05,0.82), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-3)  
     
 
 
 plt.savefig('Output/Paper/0_Fig6.png')
+
 
 
 STOP

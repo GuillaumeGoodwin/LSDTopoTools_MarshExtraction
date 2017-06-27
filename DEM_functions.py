@@ -257,8 +257,18 @@ def define_search_space (DEM, Slope, Nodata_value):
         print " ... Your search space is empty! Are you sure there's a marsh platform here?"
         print
         STOP
+        
+    
+    
+    
+  
+    #fig=plt.figure(3, facecolor='White',figsize=[4.7,4])
+    #ax1 = plt.subplot2grid((1,1),(0,0),colspan=1, rowspan=1, axisbg='white')
+    #ax1.plot(bins, hist)
+    #plt.savefig('Output/Paper/0_Fig3.png')
+    #STOP
 
-    return Search_space
+    return Search_space, Crossover, bins, hist, Inflexion_point
 
 
 #-----------------------------------------------------------------------------------------------------
@@ -1427,7 +1437,7 @@ def MARSH_ID (DEM, Slope, Curvature, Metric2, Nodata_value):
     TR_spring = np.mean (Metric2[3])-np.mean (Metric2[0])
 
 
-    Search_space = define_search_space (DEM_work, Slope_work, Nodata_value)
+    Search_space, Crossover, bins, hist, Inflexion_point = define_search_space (DEM_work, Slope_work, Nodata_value)
 
     Order = 1
     Ridge, Slope_temp = peak_flag (Slope_work, Search_space, Order)
