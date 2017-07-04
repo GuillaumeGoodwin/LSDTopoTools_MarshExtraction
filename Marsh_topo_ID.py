@@ -8,7 +8,6 @@ matplotlib.use('Agg')
 
 #----------------------------------------------------------------
 #1. Load useful Python packages
-
 import os
 import sys
 import matplotlib.mlab as mlab
@@ -42,7 +41,7 @@ from osgeo import gdal, gdalconst
 from osgeo.gdalconst import *
 
 #------------------------------------------------------------------
-# Import the marsh-finding functions
+# Import the cosutm-made marsh-finding functions
 from DEM_functions import Open_tide_stats
 from DEM_functions import MARSH_ID
 from DEM_functions import Confusion
@@ -59,23 +58,13 @@ from DEM_functions import ENVI_raster_binary_from_2d_array
 
 #------------------------------------------------------------------
 #These are the tide gauges next to the marshes we work on
-#Gauges=["AVO","BOU","CRO","DEV","FEL","HEY","HIN","IMM","LIV","PTM","SHE"] # Analyse ALL the tide gauges
+Gauges=["BOU", "FEL", "CRO", "SHE", "WOR", "HEY", "HIN"] # Sorted by Tidal Range
 
-
-Gauges=["BOU", "FEL", "CRO", "SHE", "WOR", "HEY", "HIN"] # ALL gauges by tidal range
-#Gauges=["CRO", "SHE", "WOR", "HEY", "HIN"] # ALL gauges by tidal range
-
-#Gauges=["BOU", "HEY", "HIN"] # ALL gauges by tidal range
-
-#Gauges=["SHE"]
-
-Nodata_value = -9999
-
-
+Nodata_value = -9999 # This is the value for empty DEM cells
 
 
 for gauge in Gauges:
-    print "I am processing this site: %s" % (gauge)
+    print "Let's process site %s" % (gauge)
     print
 
     print "Preparing reference data"
@@ -92,7 +81,7 @@ for gauge in Gauges:
     Reference, post_Reference, envidata_Reference =  ENVI_raster_binary_to_2d_array ("Input/Reference/%s/%s_marsh_DEM_clip.bil" % (gauge,gauge), gauge)
 
 
-    """print "Preparing input data"
+    print "Preparing input data"
     print " Clipping DEM raster"
     sourcefile = "Input/Topography/%s/%s_DEM_WFILT.bil" % (gauge,gauge)
     cutfile = "Input/Reference/%s/%s_domain.shp" % (gauge,gauge)
@@ -112,10 +101,10 @@ for gauge in Gauges:
     sourcefile = "Input/Topography/%s/%s_hs.bil" % (gauge,gauge)
     cutfile = "Input/Reference/%s/%s_domain.shp" % (gauge,gauge)
     destinationfile = "Input/Topography/%s/%s_hs.bil" % (gauge,gauge)
-    os.system("gdalwarp -overwrite -of ENVI -cutline " + cutfile + " -crop_to_cutline " + sourcefile + " " +  destinationfile)"""
+    os.system("gdalwarp -overwrite -of ENVI -cutline " + cutfile + " -crop_to_cutline " + sourcefile + " " +  destinationfile)
 
 
-
+    STOP
 
 
     print "Loading input data"
@@ -132,16 +121,13 @@ for gauge in Gauges:
 
 
 
-    print "Identifying features"
+    print "Identifying the platform and scarps"
     DEM_work = np.copy(DEM)
     Search_space, Scarps, Platform = MARSH_ID(DEM_work, Slope, Curvature, Metric2_tide, Nodata_value)
     Platform_work = np.copy(Platform)
 
     print "Measuring performances"
     Confusion_matrix, Performance, Metrix = Confusion (Platform_work, Reference, Nodata_value)
-    #Platform[Platform > 0] = DEM [Platform > 0]
-    #Void = np.where (DEM == Nodata_value)
-    #Platform[Void] = Nodata_value
 
     Scarps[Scarps == 0] = Nodata_value
     #------------------------------------------------------------------------------------------------------
