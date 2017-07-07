@@ -168,7 +168,7 @@ for gauge in Gauges:
         driverfile = "%s_%s_driver.LSDTT_driver " % (gauge,res)
 
         print " Making the driver file"
-        make_driver(templatedir,templatefile, gauge, res,1)
+        make_driver(templatedir,templatefile, gauge, res,0)
 
         os.system("mv " + templatedir + "AAA.txt " + srcdir+driverfile)
         os.system("(cd "+ workdir +" && ./LSDTT_analysis_from_paramfile.out " + srcdir + " " + driverfile + ")")
@@ -180,7 +180,8 @@ for gauge in Gauges:
         print " Loading tidalstatistix"
         Metric1_tide, Metric2_tide, Metric3_tide, Subsample = Open_tide_stats ("Input/Tide/%s/%s_" % (gauge,gauge), gauge)
         print " Loading DEM"
-        DEM, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Input/Topography/%s/%s_%s_DEM_clip_WFILT.bil" % (gauge,gauge,res), gauge)
+        DEM, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Input/Topography/%s/%s_%s_DEM_clip.bil" % (gauge,gauge,res), gauge)
+        #DEM, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Input/Topography/%s/%s_%s_DEM_clip_WFILT.bil" % (gauge,gauge,res), gauge)
         print " Loading Slopes"
         Slope, post_Slope, envidata_Slope =  ENVI_raster_binary_to_2d_array ("Input/Topography/%s/%s_%s_slope.bil" % (gauge,gauge,res), gauge)
         
@@ -193,7 +194,7 @@ for gauge in Gauges:
         #Channels, post_Channels, envidata_Channels =  ENVI_raster_binary_to_2d_array ("LiDAR_DTM_1m/%s/%s_%s_Channels_SO_wiener.bil" % (gauge,gauge,res), gauge)
 
 
-        """"print "Identifying the platform and scarps"
+        print "Identifying the platform and scarps"
         DEM_work = np.copy(DEM)
         Search_space, Scarps, Platform = MARSH_ID(DEM_work, Slope, Curvature, Metric2_tide, Nodata_value)
         Platform_work = np.copy(Platform)
@@ -203,9 +204,9 @@ for gauge in Gauges:
         #------------------------------------------------------------------------------------------------------
         #Save the results
         print "Saving marsh features"
-        new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_DEM, "Output/%s/%s_%s_Search_space.bil" % (gauge, gauge,res), post_DEM, Search_space)
-        new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_DEM, "Output/%s/%s_%s_Scarps.bil" % (gauge, gauge,res), post_DEM, Scarps)
-        new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_DEM, "Output/%s/%s_%s_Marsh.bil" % (gauge, gauge,res), post_DEM, Platform)"""
+        new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_DEM, "Output/%s/%s_%s_Search_space_nofilter.bil" % (gauge, gauge,res), post_DEM, Search_space)
+        new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_DEM, "Output/%s/%s_%s_Scarps_nofilter.bil" % (gauge, gauge,res), post_DEM, Scarps)
+        new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_DEM, "Output/%s/%s_%s_Marsh_nofilter.bil" % (gauge, gauge,res), post_DEM, Platform)
         
         #---------------------------------------------------------------
         # Calculate the performances of your algorithm
@@ -213,23 +214,23 @@ for gauge in Gauges:
         if i != 0:
             # Resample the output
             print "Upgrading output raster resolution to match the reference"
-            sourcefile = "Output/%s/%s_%s_Marsh.bil" % (gauge,gauge,res)
-            destinationfile = "Output/%s/%s_%s_Marsh_R.bil" % (gauge,gauge,res)
+            sourcefile = "Output/%s/%s_%s_Marsh_nofilter.bil" % (gauge,gauge,res)
+            destinationfile = "Output/%s/%s_%s_Marsh_R_nofilter.bil" % (gauge,gauge,res)
             os.system("gdalwarp -of ENVI -t_srs EPSG:27700 -tr 1 1 -r near " + sourcefile + " " +  destinationfile)
 
             print " Loading Marsh"
-            Platform_work, post_Platform, envidata_Platform =  ENVI_raster_binary_to_2d_array ("Output/%s/%s_%s_Marsh_R.bil" % (gauge,gauge,res), gauge)
+            Platform_work, post_Platform, envidata_Platform =  ENVI_raster_binary_to_2d_array ("Output/%s/%s_%s_Marsh_R_nofilter.bil" % (gauge,gauge,res), gauge)
         
         else:
             print " Loading Marsh"
-            Platform_work, post_Platform, envidata_Platform =  ENVI_raster_binary_to_2d_array ("Output/%s/%s_%s_Marsh.bil" % (gauge,gauge,res), gauge)
+            Platform_work, post_Platform, envidata_Platform =  ENVI_raster_binary_to_2d_array ("Output/%s/%s_%s_Marsh_nofilter.bil" % (gauge,gauge,res), gauge)
         
         print "Measuring performances"
         Confusion_matrix, Performance, Metrix = Confusion (Platform_work, Reference, Nodata_value)
-        new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_Platform, "Output/%s/%s_%s_Confusion_DEM.bil" % (gauge, gauge,res), post_Platform, Confusion_matrix)
+        new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_Platform, "Output/%s/%s_%s_Confusion_DEM_nofilter.bil" % (gauge, gauge,res), post_Platform, Confusion_matrix)
 
-        cPickle.dump(Performance,open("Output/%s/%s_%s_Performance.pkl" % (gauge,gauge,res), "wb"))
-        cPickle.dump(Metrix,open("Output/%s/%s_%s_Metrix.pkl" % (gauge,gauge,res), "wb"))
+        cPickle.dump(Performance,open("Output/%s/%s_%s_Performance_nofilter.pkl" % (gauge,gauge,res), "wb"))
+        cPickle.dump(Metrix,open("Output/%s/%s_%s_Metrix_nofilter.pkl" % (gauge,gauge,res), "wb"))
 
 
 
