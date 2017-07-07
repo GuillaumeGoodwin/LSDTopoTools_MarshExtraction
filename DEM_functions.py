@@ -17,9 +17,12 @@ def Distribution(Data2D, Nodata_value):
     
 
     Data1D = Data2D.ravel()
-    
-    Max_distribution = max(Data1D)
-    Min_distribution = min(Data1D[Data1D>Nodata_value])
+
+    Max_distribution = max(Data1D)    
+    if len(Data1D[Data1D>Nodata_value]) == 0:
+        Min_distribution = -1
+    else:
+        Min_distribution = min(Data1D[Data1D>Nodata_value])
     
     bin_size = (Max_distribution - Min_distribution) / 100
     
@@ -432,7 +435,7 @@ def initiate_ridge (Slope, Search_space, Peaks, Order):
 
 
 def Continue_ridge (DEM, Slope, Search_space, Peaks, Order, Tidal_ranges):
-    print ' ... Rolling down ...'
+    #print ' ... Rolling down ...'
 
     DEM_copy = np.copy(DEM) # the copy of the initial DEM array
     Slope_copy = np.copy(Slope) # the copy of the initial slope array
@@ -624,7 +627,7 @@ def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value):
 
     while Counter < 100:
         Counter = Counter+1
-        print ' ... Filling ... ', Counter
+        #print ' ... Filling ... ', Counter
         Search_marsh = np.where (Marsh == Counter-1)
         for i in range(len(Search_marsh[0])):
             x = Search_marsh[0][i]; y = Search_marsh[1][i]
@@ -672,17 +675,20 @@ def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value):
 
             """These conditions work! They generate a distribution where you can claerly see if there is some colouring on the tidal flat because you will see a peak at the lowest elevations. All you need to do now is identify that peak and cut it off!"""
             
- 
 
-    
     
     #This is where you define the cutoff spot!
-
     Platform = np.copy(Marsh)
     Platform[Platform > 0] = DEM [Platform > 0]
     Platform_bins, Platform_hist = Distribution(Platform,0)
 
     #1. Find the highest and biggest local maximum of frequency distribution
+    
+    # Initialize Index
+    Index = len(Platform_hist)-1
+    # Initiate Cutoff_Z value
+    Cutoff_Z = 0
+    
     for j in range(1,len(Platform_hist)-1):
         if Platform_hist[j]>0.9*max(Platform_hist) and Platform_hist[j]>Platform_hist[j-1] and Platform_hist[j]>Platform_hist[j+1]:
             Index  = j
@@ -690,18 +696,25 @@ def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value):
     #2. Now run a loop from there toward lower elevations.
     Counter = 0
     for j in range(Index,0,-1):
-        # See if you cross the mean value. Count for how many indices you are under.
+        # See if you cross the mean value of frequency. Count for how many indices you are under.
         if Platform_hist[j] < np.mean(Platform_hist):
             Counter = Counter + 1
         # Reset the counter value if you go above average again
         else:
             Counter = 0 
-            
-        #If you stay long enough under (10 is arbitrary for now), initiate cutoff
+    
+        #If you stay long enough under (10 is arbitrary for now), initiate cutoff and stop the search
         if Counter > 10:
             Cutoff = j
             Cutoff_Z = Platform_bins[Cutoff]
             break
+        
+    # If you stay under for more than 5, set a Cutoff_Z value but keep searching    
+    if Counter > 5:
+        Cutoff = j
+        Cutoff_Z = Platform_bins[Cutoff]
+        
+            
     
     Marsh[Platform<Cutoff_Z] = 0
 
@@ -721,7 +734,7 @@ def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value):
         Counter = 100
         while Counter > 2:
             Counter = Counter-1
-            print " ... Reverse filling ... ", Counter
+            #print " ... Reverse filling ... ", Counter
             Search_marsh = np.where (Marsh == Counter+1)
             Non_filled = 0
             for i in range(len(Search_marsh[0])):
@@ -803,7 +816,7 @@ def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value):
         Counter = 110
         while Counter > 2:
             Counter = Counter-1
-            print " ... Reverse filling ... ", Counter
+            #print " ... Reverse filling ... ", Counter
             Search_marsh = np.where (Marsh == Counter+1)
             Non_filled = 0
             for i in range(len(Search_marsh[0])):
@@ -1436,7 +1449,6 @@ def MARSH_ID (DEM, Slope, Curvature, Metric2, Nodata_value):
     #---------------------------------------
     TR_spring = np.mean (Metric2[3])-np.mean (Metric2[0])
 
-
     Search_space, Crossover, bins, hist, Inflexion_point = define_search_space (DEM_work, Slope_work, Nodata_value)
 
     Order = 1
@@ -1478,6 +1490,17 @@ def MARSH_ID (DEM, Slope, Curvature, Metric2, Nodata_value):
 def Confusion (Subject, Reference, Nodata_value):
     Height = len(Subject[:,0]); Width = len(Subject[0,:])
     Height_R = len(Reference[:,0]); Width_R = len(Reference[0,:])
+    
+    
+    
+    print Height, Width
+    print Height_R, Width_R
+    
+    
+    H = min (Height, Height_R)
+    W = min (Width, Width_R)
+    
+    
 
     Confusion_matrix = Nodata_value*np.ones((Height, Width), dtype = np.float)
 
@@ -1488,8 +1511,8 @@ def Confusion (Subject, Reference, Nodata_value):
     Subject[Subject_marsh] = 1.
     Reference[Reference_marsh] = 1.
 
-    for i in range (Height):
-        for j in range (Width):
+    for i in range (H):
+        for j in range (W):
             if Subject[i,j] == 1 and Reference[i,j] == 1: # TRUE POSITIVE
                 Confusion_matrix[i,j] = 1
             elif Subject[i,j] == 0 and Reference[i,j] == 0: # TRUE NEGATIVE
@@ -1515,22 +1538,6 @@ def Confusion (Subject, Reference, Nodata_value):
 
 
     return Confusion_matrix, Performance, Metrix
-
-
-
-
-
-# A smaller area for HIN
-#DEM_work = DEM[1300:1700,400:700]
-#Slope_work = Slope[1300:1700,400:700]
-
-# A smaller area for CRO
-#DEM_work = DEM[3200:3700,4500:5300]
-#Slope_work = Slope[3200:3700,4500:5300]
-
-# A smaller area for BOU
-#DEM_work = DEM[1000:1500,300:600]
-#Slope_work = Slope[1000:1500,300:600]
 
 
 

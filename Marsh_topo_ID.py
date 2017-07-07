@@ -59,6 +59,7 @@ from DEM_functions import ENVI_raster_binary_from_2d_array
 #------------------------------------------------------------------
 #These are the tide gauges next to the marshes we work on
 Gauges=["BOU", "FEL", "CRO", "SHE", "WOR", "HEY", "HIN"] # Sorted by Tidal Range
+Gauges=["HIN"] # Sorted by Tidal Range
 
 Nodata_value = -9999 # This is the value for empty DEM cells
 
@@ -81,7 +82,7 @@ for gauge in Gauges:
     Reference, post_Reference, envidata_Reference =  ENVI_raster_binary_to_2d_array ("Input/Reference/%s/%s_marsh_DEM_clip.bil" % (gauge,gauge), gauge)
 
 
-    print "Preparing input data"
+    """print "Preparing input data"
     print " Clipping DEM raster"
     sourcefile = "Input/Topography/%s/%s_DEM_WFILT.bil" % (gauge,gauge)
     cutfile = "Input/Reference/%s/%s_domain.shp" % (gauge,gauge)
@@ -101,10 +102,7 @@ for gauge in Gauges:
     sourcefile = "Input/Topography/%s/%s_hs.bil" % (gauge,gauge)
     cutfile = "Input/Reference/%s/%s_domain.shp" % (gauge,gauge)
     destinationfile = "Input/Topography/%s/%s_hs.bil" % (gauge,gauge)
-    os.system("gdalwarp -overwrite -of ENVI -cutline " + cutfile + " -crop_to_cutline " + sourcefile + " " +  destinationfile)
-
-
-    STOP
+    os.system("gdalwarp -overwrite -of ENVI -cutline " + cutfile + " -crop_to_cutline " + sourcefile + " " +  destinationfile)"""
 
 
     print "Loading input data"
@@ -133,13 +131,13 @@ for gauge in Gauges:
     #------------------------------------------------------------------------------------------------------
     #Save the results
     print "Saving marsh features"
-    new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_DEM, "Output/%s/%s_Search_space.bil" % (gauge, gauge), post_DEM, Search_space)
-    new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_DEM, "Output/%s/%s_Scarps.bil" % (gauge, gauge), post_DEM, Scarps)
-    new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_DEM, "Output/%s/%s_Marsh.bil" % (gauge, gauge), post_DEM, Platform)
-    new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_DEM, "Output/%s/%s_Confusion_DEM.bil" % (gauge, gauge), post_DEM, Confusion_matrix)
+    new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_DEM, "Output/%s/%s_Search_spaceB.bil" % (gauge, gauge), post_DEM, Search_space)
+    new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_DEM, "Output/%s/%s_ScarpsB.bil" % (gauge, gauge), post_DEM, Scarps)
+    new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_DEM, "Output/%s/%s_MarshB.bil" % (gauge, gauge), post_DEM, Platform)
+    new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_DEM, "Output/%s/%s_Confusion_DEMB.bil" % (gauge, gauge), post_DEM, Confusion_matrix)
 
-    cPickle.dump(Performance,open("Output/%s/%s_Performance.pkl" % (gauge,gauge), "wb"))
-    cPickle.dump(Metrix,open("Output/%s/%s_Metrix.pkl" % (gauge,gauge), "wb"))
+    cPickle.dump(Performance,open("Output/%s/%s_PerformanceA.pkl" % (gauge,gauge), "wb"))
+    cPickle.dump(Metrix,open("Output/%s/%s_MetrixA.pkl" % (gauge,gauge), "wb"))
 
     print
     print

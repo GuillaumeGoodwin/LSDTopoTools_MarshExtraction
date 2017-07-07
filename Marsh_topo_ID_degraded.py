@@ -59,7 +59,8 @@ from DEM_functions import ENVI_raster_binary_from_2d_array
 #------------------------------------------------------------------
 #These are the resolutions we work on
 
-Gauges=["HIN5", "HIN10", "HIN15", "HIN20", "HIN25", "HIN30", "HIN40", "HIN50", "HIN75", "HIN100"] # Sorted by resolution in dm
+Gauges=["HIN5", "HIN10", "HIN15", "HIN20", "HIN25", "HIN30", "HIN40", "HIN50", "HIN75"]#, "HIN100"] # Sorted by resolution in dm
+#Gauges=["HIN30", "HIN40", "HIN50", "HIN75", "HIN100"] # Sorted by resolution in dm
 
 Resolutions = [0.5,1,1.5,2,2.5,3,4,5,7.5,10]
 
@@ -76,6 +77,7 @@ Nodata_value = -9999 # This is the value for empty DEM cells
 
 # OR DO YOU? YOU COULD JUST UPGRADE THE RESOLUTION OF THE OUTPUT RASTER
 
+# Something's wrong
 
 ##################
 
@@ -85,8 +87,8 @@ Nodata_value = -9999 # This is the value for empty DEM cells
 print "Preparing reference data at a high resolution"
 
 print " Converting reference marsh outline to a raster"
-sourcefile = "Input/Reference/HIN_degraded/HIN05_marsh_DEM.shp"
-destinationfile = "Input/Reference/HIN_degraded/HIN05_marsh_DEM.bil"
+sourcefile = "Input/Reference/HIN_degraded/HIN05_marsh_nosaltings_DEM.shp"
+destinationfile = "Input/Reference/HIN_degraded/HIN05_marsh_nosaltings_DEM.bil"
 os.system("gdal_rasterize -a Raster_val -of ENVI -a_srs EPSG:27700 -tr 0.5 0.5 " + sourcefile + " " +  destinationfile)
 
 print " Clipping reference marsh outline raster"
@@ -108,22 +110,22 @@ for gauge in Gauges:
     
     print " Clipping DEM raster"
     sourcefile = "Input/Topography/HIN_degraded/%sdm_DEM_WFILT.bil" % (gauge)
-    destinationfile = "Input/Topography/HIN_degraded/%sdm_DEM_WFILT.bil" % (gauge)
+    destinationfile = "Input/Topography/HIN_degraded/%sdm_DEM_WFILT_clip.bil" % (gauge)
     os.system("gdalwarp -overwrite -of ENVI -cutline " + cutfile + " -crop_to_cutline " + sourcefile + " " +  destinationfile)
-    
+
     print " Clipping slope raster"
     sourcefile = "Input/Topography/HIN_degraded/%sdm_slope.bil" % (gauge)
-    destinationfile = "Input/Topography/HIN_degraded/%sdm_slope.bil" % (gauge)
+    destinationfile = "Input/Topography/HIN_degraded/%sdm_slope_clip.bil" % (gauge)
     os.system("gdalwarp -overwrite -of ENVI -cutline " + cutfile + " -crop_to_cutline " + sourcefile + " " +  destinationfile)
     
     print " Clipping curvature raster"
     sourcefile = "Input/Topography/HIN_degraded/%sdm_curvature.bil" % (gauge)
-    destinationfile = "Input/Topography/HIN_degraded/%sdm_curvature.bil" % (gauge)
+    destinationfile = "Input/Topography/HIN_degraded/%sdm_curvature_clip.bil" % (gauge)
     os.system("gdalwarp -overwrite -of ENVI -cutline " + cutfile + " -crop_to_cutline " + sourcefile + " " +  destinationfile)
     
     print " Clipping hillshade raster"
     sourcefile = "Input/Topography/HIN_degraded/%sdm_hs.bil" % (gauge)
-    destinationfile = "Input/Topography/HIN_degraded/%sdm_hs.bil" % (gauge)
+    destinationfile = "Input/Topography/HIN_degraded/%sdm_hs_clip.bil" % (gauge)
     os.system("gdalwarp -overwrite -of ENVI -cutline " + cutfile + " -crop_to_cutline " + sourcefile + " " +  destinationfile)
 
 
@@ -131,19 +133,20 @@ for gauge in Gauges:
     print " Loading tidalstatistix"
     Metric1_tide, Metric2_tide, Metric3_tide, Subsample = Open_tide_stats ("Input/Tide/HIN/HIN_", "HIN")
     print " Loading DEM"
-    DEM, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Input/Topography/HIN_degraded/%sdm_DEM_WFILT.bil" % (gauge), gauge)
+    DEM, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Input/Topography/HIN_degraded/%sdm_DEM_WFILT_clip.bil" % (gauge), gauge)
     print " Loading Slopes"
-    Slope, post_Slope, envidata_Slope =  ENVI_raster_binary_to_2d_array ("Input/Topography/HIN_degraded/%sdm_slope.bil" % (gauge), gauge)
+    Slope, post_Slope, envidata_Slope =  ENVI_raster_binary_to_2d_array ("Input/Topography/HIN_degraded/%sdm_slope_clip.bil" % (gauge), gauge)
     print " Loading Curvature"
-    Curvature, post_Curvature, envidata_Curvature =  ENVI_raster_binary_to_2d_array ("Input/Topography/HIN_degraded/%sdm_curvature.bil" % (gauge), gauge)
+    Curvature, post_Curvature, envidata_Curvature =  ENVI_raster_binary_to_2d_array ("Input/Topography/HIN_degraded/%sdm_curvature_clip.bil" % (gauge), gauge)
     #print " Loading Channels"
     #Channels, post_Channels, envidata_Channels =  ENVI_raster_binary_to_2d_array ("LiDAR_DTM_1m/%s/%s_Channels_SO_wiener.bil" % (gauge,gauge), gauge)
 
 
 
     print "Identifying the platform and scarps"
-    DEM_work = np.copy(DEM)
-    Search_space, Scarps, Platform = MARSH_ID(DEM_work, Slope, Curvature, Metric2_tide, Nodata_value)
+    DEM_work = np.copy(DEM)/1000
+    Slope_work = np.copy(Slope)/1000
+    Search_space, Scarps, Platform = MARSH_ID(DEM_work, Slope_work, Curvature, Metric2_tide, Nodata_value)
     Scarps[Scarps == 0] = Nodata_value
     
         #------------------------------------------------------------------------------------------------------
