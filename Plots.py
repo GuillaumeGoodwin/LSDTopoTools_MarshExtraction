@@ -153,9 +153,16 @@ def Outline (Raster, Outline_value):
 #These are the tide gauges next to the marshes we work on
 #Gauges=["BOU", "FEL", "CRO", "SHE", "WOR", "HEY", "HIN"] # ALL gauges by tidal range
 Gauges=["BOU", "FEL", "CRO", "SHE", "HEY", "HIN"] # ALL gauges by tidal range
+
 # And these are the resolutions we work on, expressed in dm
 Resolutions=["1.0", "1.5", "2.0", "2.5", "3.0", "4.0", "5.0", "7.5", "10.0"]  
 Resolutions_num = np.asarray(Resolutions).astype(float)
+
+# And these are the optimisation values
+Opt1=["-2.0", "-1.8", "-1.6", "-1.4", "-1.2", "-1.0", "-0.8", "-0.6", "-0.4", "-0.2"] 
+Opt1_num = np.asarray(Opt1).astype(float)
+
+
 
 #These are the gauges for evolution in time
 HGauges=["HIN_200703","HIN_200710", "HIN_200909", "HIN_201103", "HIN_201205", "HIN_201302", "HIN_201402","HIN_201410"] 
@@ -229,7 +236,7 @@ for gauge in Gauges:
 
 #---------------------------------------------------------------------------
 # Figure 1 [1col]: This is a map of where our sites are from (a), complete with tidal range and distribution of elevations (b)
-fig=plt.figure(1, facecolor='White',figsize=[3.2,4.9])
+"""fig=plt.figure(1, facecolor='White',figsize=[3.2,4.9])
 matplotlib.rc('xtick', labelsize=9) 
 
 # First map the map
@@ -273,7 +280,7 @@ cb.set_label('Spring tidal range (m)', fontsize = 9)
 
 
 
-plt.savefig('Output/Paper/0_Main_Fig1.png')
+plt.savefig('Output/Paper/0_Main_Fig1.png')"""
 
  
 
@@ -281,7 +288,7 @@ plt.savefig('Output/Paper/0_Main_Fig1.png')
 
 #---------------------------------------------------------------------------
 # Figure 2 [1col]: This is a figure of the definition of the search space. It has examples of DEMxSlope (a) and the resulting search space (b) for an example
-fig=plt.figure(2, facecolor='White',figsize=[3.2,6.5])
+"""fig=plt.figure(2, facecolor='White',figsize=[3.2,6.5])
 
 matplotlib.rc('xtick', labelsize=8)
 matplotlib.rc('ytick', labelsize=8) 
@@ -398,7 +405,7 @@ hspace = 0.0   # the amount of height reserved for white space between subplots
 subplots_adjust(left=left, bottom=bottom, right=None, top=None, wspace=wspace, hspace=hspace)
 
 
-plt.savefig('Output/Paper/0_Main_Fig2.png')
+plt.savefig('Output/Paper/0_Main_Fig2.png')"""
 
 
 
@@ -408,11 +415,11 @@ plt.savefig('Output/Paper/0_Main_Fig2.png')
 
 
 
-fig=plt.figure(3, facecolor='White',figsize=[4.7,8])
+"""fig=plt.figure(3, facecolor='White',figsize=[4.7,8])
 
 
 
-"""matplotlib.rc('xtick', labelsize=8)
+matplotlib.rc('xtick', labelsize=8)
 matplotlib.rc('ytick', labelsize=8) 
 
 ax1 = plt.subplot2grid((4,2),(0,0),colspan=2, rowspan=2,axisbg='white')
@@ -522,33 +529,27 @@ add_arrow_to_line2D(ax3, line4, arrow_locs=np.linspace(0., 1., 30), arrowstyle='
      
 Map_Scarps = ax3.imshow(Scarps_masked*6, interpolation='None', cmap = plt.cm.jet, vmin=0, vmax=12)   
   
-    """
 
 
 
 
-plt.savefig('Output/Paper/0_Main_Fig3.png')
+
+plt.savefig('Output/Paper/0_Main_Fig3.png')"""
     
 
 #---------------------------------------------------------------------------
 # Figure 4: This one shows a diagram of the process (a) and an array with filled-in platform (b) and cleaned-platform(c)
 
-fig=plt.figure(4, facecolor='White',figsize=[4.7,8])
+"""fig=plt.figure(4, facecolor='White',figsize=[4.7,8])
 
 
-
-
-
-
-
-
-plt.savefig('Output/Paper/0_Main_Fig4.png')
+plt.savefig('Output/Paper/0_Main_Fig4.png')"""
 
 
 
 #---------------------------------------------------------------------------
 # Figure 6 [2col]: This one showcases the results in a combined way
-fig=plt.figure(5, facecolor='White',figsize=[4.7,7.5])
+"""fig=plt.figure(5, facecolor='White',figsize=[4.7,7.5])
 
 # Set up the fonts and stuff
 matplotlib.rc('xtick', labelsize=9) 
@@ -655,7 +656,7 @@ ax4.annotate('False positives', xy=(0.05,0.85), xycoords='axes fraction',horizon
 ax5.annotate('True negatives', xy=(0.05,0.85), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-3)  
 
 
-plt.savefig('Output/Paper/0_Main_Fig5_noresample.png')
+plt.savefig('Output/Paper/0_Main_Fig5_noresample.png')"""
 
 # TICKS ARE EVERY 50m
 
@@ -663,7 +664,7 @@ plt.savefig('Output/Paper/0_Main_Fig5_noresample.png')
 
 #---------------------------------------------------------------------------
 # Figure 6 [1col]: Performance results for different resolutions
-fig=plt.figure(6, facecolor='White',figsize=[4.7,5.0])
+"""fig=plt.figure(6, facecolor='White',figsize=[4.7,5.0])
 
 # Set up the fonts and stuff
 matplotlib.rc('xtick', labelsize=9) 
@@ -792,17 +793,14 @@ subplots_adjust(left=left, bottom=bottom, right=None, top=None, wspace=None, hsp
    
 np.savetxt('Output/Paper/Acc_aggr.csv', Acc_aggr, delimiter = ' ')
 
-plt.savefig('Output/Paper/0_Main_Fig6_mashup.png')
-
-STOP
-
+plt.savefig('Output/Paper/0_Main_Fig6_mashup.png')"""
 
 
 
 
 #---------------------------------------------------------------------------
 # Figure 7 [1col]: This one shows the differences in elevation distribution
-fig=plt.figure(7, facecolor='White',figsize=[3.2,5.5])
+"""fig=plt.figure(7, facecolor='White',figsize=[3.2,5.5])
 
 # Set up the fonts and stuff
 matplotlib.rc('xtick', labelsize=8) 
@@ -886,7 +884,7 @@ hspace = 0.3   # the amount of height reserved for white space between subplots
 subplots_adjust(left=left, bottom=bottom, right=None, top=None, wspace=wspace, hspace=hspace)
 
 
-plt.savefig('Output/Paper/0_Main_Fig7.png')
+plt.savefig('Output/Paper/0_Main_Fig7.png')"""
 
 
 
@@ -894,7 +892,7 @@ plt.savefig('Output/Paper/0_Main_Fig7.png')
 #---------------------------------------------------------------------------
 # Figure 8: This one shows evolution of performance for degraded resolution in terms of area/perimeter or A/P
 
-fig=plt.figure(8, facecolor='White',figsize=[3.2,5])
+"""fig=plt.figure(8, facecolor='White',figsize=[3.2,5])
 
 # Set up the fonts and stuff
 matplotlib.rc('xtick', labelsize=9) 
@@ -969,7 +967,7 @@ hspace = 0.25   # the amount of height reserved for white space between subplots
 subplots_adjust(left=left, bottom=bottom, right=None, top=None, wspace=wspace, hspace=hspace)
 
 
-plt.savefig('Output/Paper/0_Main_Fig8.png')
+plt.savefig('Output/Paper/0_Main_Fig8.png')"""
 
 
 
@@ -978,7 +976,7 @@ plt.savefig('Output/Paper/0_Main_Fig8.png')
 
 #------------------------------------------------------------------------------
 # Figure 9 [2col]: temporal evolution
-fig=plt.figure(9, facecolor='White',figsize=[4.7,3.6])
+"""fig=plt.figure(9, facecolor='White',figsize=[4.7,3.6])
 
 # Set up the fonts and stuff
 matplotlib.rc('xtick', labelsize=8) 
@@ -1084,7 +1082,146 @@ subplots_adjust(left=left, bottom=bottom, right=None, top=None, wspace=wspace, h
 
 
 
-plt.savefig('Output/Paper/0_Main_Fig9.png')
+plt.savefig('Output/Paper/0_Main_Fig9.png')"""
+
+
+
+
+
+
+
+
+#---------------------------------------------------------------------------
+# Figure 10 [1col]: Performance results for different optimised parameters
+
+Opt1=["-2.0", "-1.8", "-1.6", "-1.4", "-1.2", "-1.0", "-0.8", "-0.6", "-0.4", "-0.2"] 
+Opt1_num = np.asarray(Opt1).astype(float)
+
+
+fig=plt.figure(10, facecolor='White',figsize=[4.7,5.0])
+
+# Set up the fonts and stuff
+matplotlib.rc('xtick', labelsize=9) 
+matplotlib.rc('ytick', labelsize=8)
+
+width = 0.07
+
+
+
+
+
+
+
+Acc_aggr = []
+
+
+ax1 = plt.subplot2grid((3,1),(0,0),colspan=1, rowspan=1)
+ax2 = plt.subplot2grid((3,1),(1,0),colspan=1, rowspan=1)
+ax3 = plt.subplot2grid((3,1),(2,0),colspan=1, rowspan=1)
+
+ax1.set_ylim(0.56,1.05)
+ax2.set_ylim(0.36,1.05)
+ax3.set_ylim(0.36,1.05)
+
+ax1.set_xlim(0.5,11)
+ax2.set_xlim(0.5,11)
+ax3.set_xlim(0.5,11)
+
+majorLocator1 = MultipleLocator(0.1)
+ax1.yaxis.set_major_locator(majorLocator1)
+majorLocator2 = MultipleLocator(0.2)
+ax2.yaxis.set_major_locator(majorLocator2)
+ax3.yaxis.set_major_locator(majorLocator2)
+
+ax1.annotate('a.', xy=(0.93,0.80), xycoords='axes fraction', fontsize=rcParams['font.size']-2, color='k') 
+ax2.annotate('b.', xy=(0.93,0.80), xycoords='axes fraction', fontsize=rcParams['font.size']-2, color='k') 
+ax3.annotate('c.', xy=(0.93,0.80), xycoords='axes fraction', fontsize=rcParams['font.size']-2, color='k') 
+
+
+ax1.set_ylabel('A-opt1', fontsize = 9)
+ax2.set_ylabel('A-opt2', fontsize = 9)
+ax3.set_ylabel('A-opt3', fontsize = 9)
+
+ax1.set_xlabel('opt1 value ()', fontsize = 9)
+ax2.set_xlabel('opt2 value ()', fontsize = 9)
+ax3.set_xlabel('opt3 value ()', fontsize = 9)
+
+i = 0
+for gauge in Gauges:
+    Accuracy = np.zeros(len(Resolutions),dtype=np.float)
+
+    j=0
+    for opt1 in Opt1:
+        with open ("Output/%s/%s_O1_%s_Metrix_nofilter.pkl" % (gauge,gauge,opt1), 'rb') as input_file:
+            Metrix = cPickle.load(input_file)
+            Accuracy [j]= Metrix[0]
+        j = j+1
+    Acc_aggr.append(Accuracy)
+
+    ax1.bar(Resolutions_num + i*width, Accuracy, width, color=plt.cm.winter(0.1*Metrix_gauges[i,0]), linewidth = 0)    
+    
+    i = i+1
+
+        
+Acc_mean = []
+for i in range(len(Opt1)):
+    Acc_mean.append(np.mean(Acc_aggr[:,i]))
+ 
+print Acc_mean 
+
+
+        
+left  = 0.15  # the left side of the subplots of the figure
+right = 0.2    # the right side of the subplots of the figure
+bottom = 0.10   # the bottom of the subplots of the figure
+top = 0.0      # the top of the subplots of the figure
+wspace = 0.0   # the amount of width reserved for blank space between subplots
+hspace = 0.1   # the amount of height reserved for white space between subplots
+    
+subplots_adjust(left=left, bottom=bottom, right=None, top=None, wspace=None, hspace=hspace)
+   
+#np.savetxt('Output/Paper/Acc_aggr.csv', Acc_aggr, delimiter = ' ')
+
+plt.savefig('Output/Paper/0_Main_Fig10.png')
+
+
+STOP
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

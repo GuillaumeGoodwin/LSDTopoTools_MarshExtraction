@@ -207,7 +207,7 @@ def maximum_slope (DEM):
 # It returns:
 # 1/ A search space within the data array
 
-def define_search_space (DEM, Slope, Nodata_value):
+def define_search_space (DEM, Slope, Nodata_value,opt):
     print 'Choosing a holiday destination ...'
     Height = len(DEM); Width = len(DEM[0,:])
     Search_space = np.zeros((Height,Width), dtype=np.float)
@@ -241,7 +241,7 @@ def define_search_space (DEM, Slope, Nodata_value):
     # If the slope gets above the -1 threshold, now that we have hit the closest point to the origin.
     # We call it the inflexion point even though it's not really an inflexion point.
     for j in range(1, len(hist)-1, 1):
-        if hist_der[j] < -1 and hist_der[j+1] >= -1:
+        if hist_der[j] < opt and hist_der[j+1] >= opt:
             Inflexion_point = bins[j]
 
     # Points within the search space should have a Crossover value above the inflexion point
@@ -498,7 +498,7 @@ def Continue_ridge (DEM, Slope, Search_space, Peaks, Order, Tidal_ranges):
 # 1/ A ridge array cleansed of unnecessary ridges
 
 
-def Clean_ridges (Peaks, DEM, Slope, Tidal_metric, Nodata_value):
+def Clean_ridges (Peaks, DEM, Slope, Tidal_metric, Nodata_value,opt):
     print "Cleaning up: I want to break free ..."
     DEM_copy = np.copy(DEM)
     DEM_copy[DEM_copy==Nodata_value] = 0
@@ -596,7 +596,7 @@ def Clean_ridges (Peaks, DEM, Slope, Tidal_metric, Nodata_value):
 # It returns:
 # 1/ An array with the marsh bits
 
-def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value):
+def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value,opt):
     print "Paint me a platform ..."
     TR = np.mean(Tidal_metric[3])-np.mean(Tidal_metric[0])
     DEM_copy = np.copy(DEM)
@@ -1383,59 +1383,41 @@ for i in range(len(Search_side[0])):
 
 #---------------------------------------------------------------
 # This function is the MarshFinder: it finds marsh platforms, scarps and pioneer zones
-
 # Here's how the MarshFinder works:
-
 # STEP 0: Identify a sesarch space where elevation is above the Neap Low Tide and slope is in the higher 50%
-
 # STEP 1: Identify scarps by:
 #                          identifying local slope maxima (peaks)
 #                          starting ridge lines along the highest slope values stemming from these peaks
 #                          continuing the ridges along the shortest path of high slopes
-
 # STEP 2: Clean the ridges if:
 #                           they are too short
 #                           the local relief is too small
 #                           they are lower than the most frequent elevation of ridges minus a constant depending on tidal range
-
 # STEP 3: Fill ground above ridges by:
 #                                   filling ground directly in contact with ridges and above the ridge
 #
-
 # STEP 4:
-
 # STEP 5:
-
 # STEP 6:
-
 # STEP 7:
-
 # STEP 8:
-
-
-
 # It takes as input:
 # 1/ the DEM
 # 2/ the Slopes
 # 3/ the Curvature
 # 4/ the Channels
 # 5/ the Tidalstatistix
-
-
 # It returns:
 # 1/ the marsh platforms
 # 2/ the marsh scarps
 # 3/ the marsh channels
 # 4/ the pioneer zones
 
-# Still working on all of those
-# 3 and 4 are not started
 
 
-
-
-
-def MARSH_ID (DEM, Slope, Curvature, Metric2, Nodata_value):
+#def MARSH_ID (DEM, Slope, Curvature, Metric2, Nodata_value):
+#Added this line for optimisation purposes
+def MARSH_ID (DEM, Slope, Curvature, Metric2, Nodata_value, opt1, opt2, opt3):
     DEM_work = np.copy(DEM); Slope_work = np.copy(Slope); Curvature_work = np.copy(Curvature) #; Channels_work = np.copy(Channels)
 
     Platform = np.copy(DEM_work)
@@ -1449,7 +1431,7 @@ def MARSH_ID (DEM, Slope, Curvature, Metric2, Nodata_value):
     #---------------------------------------
     TR_spring = np.mean (Metric2[3])-np.mean (Metric2[0])
 
-    Search_space, Crossover, bins, hist, Inflexion_point = define_search_space (DEM_work, Slope_work, Nodata_value)
+    Search_space, Crossover, bins, hist, Inflexion_point = define_search_space (DEM_work, Slope_work, Nodata_value,opt1)
 
     Order = 1
     Ridge, Slope_temp = peak_flag (Slope_work, Search_space, Order)
@@ -1461,9 +1443,9 @@ def MARSH_ID (DEM, Slope, Curvature, Metric2, Nodata_value):
         Order = Order+1
         Ridge, Slope_temp = Continue_ridge (DEM, Slope_temp, Search_space, Ridge, Order, Metric2)
 
-    Ridge = Clean_ridges (Ridge, DEM_work, Slope_work, Metric2, Nodata_value)
+    Ridge = Clean_ridges (Ridge, DEM_work, Slope_work, Metric2, Nodata_value, opt2)
 
-    Marsh = Fill_high_ground (DEM_work, Ridge, Metric2, Nodata_value)
+    Marsh = Fill_high_ground (DEM_work, Ridge, Metric2, Nodata_value, opt3)
 
 
     print "My hovercraft is full of eels!"
