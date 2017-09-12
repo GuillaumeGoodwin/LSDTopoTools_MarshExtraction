@@ -133,6 +133,20 @@ def add_arrow_to_line2D(
 
 
 
+#------------------------------------------------------------------------
+# This is my function that makes an outline out of a raster where each pobject has a given value
+
+def Outline (Raster, Outline_value):
+
+    P1 = np.where(Raster[:,1:] != Raster[:,:-1]) 
+    Raster[P1] = Outline_value           
+
+    P2 = np.where(Raster[1:,:] != Raster[:-1,:])
+    Raster[P2] = Outline_value
+    
+    return Raster
+
+
 
 
 #------------------------------------------------------------------
@@ -258,17 +272,16 @@ cb.set_label('Spring tidal range (m)', fontsize = 9)
     
 
 
+
 plt.savefig('Output/Paper/0_Main_Fig1.png')
 
  
-# ADD COAST TYPE?
-
 
 
 
 #---------------------------------------------------------------------------
 # Figure 2 [1col]: This is a figure of the definition of the search space. It has examples of DEMxSlope (a) and the resulting search space (b) for an example
-"""fig=plt.figure(2, facecolor='White',figsize=[3.2,6.5])
+fig=plt.figure(2, facecolor='White',figsize=[3.2,6.5])
 
 matplotlib.rc('xtick', labelsize=8)
 matplotlib.rc('ytick', labelsize=8) 
@@ -277,6 +290,7 @@ matplotlib.rc('ytick', labelsize=8)
 i=0
 for gauge in Gauges:
     ax1 = plt.subplot2grid((12,5),(i,0),colspan=5, rowspan=1,axisbg='white')
+    #ax1bis = ax1.twinx()
     ax1.annotate('a%s.' % (i+1) , xy=(0.85,0.65), xycoords='axes fraction', fontsize=rcParams['font.size']-2, color='k') 
     
     majorLocatorx = MultipleLocator(0.02)
@@ -287,9 +301,9 @@ for gauge in Gauges:
     ax1.yaxis.set_major_locator(majorLocatory)
     
     if i == 2:
-        ax1.set_ylabel('Distribution', fontsize = 9)
+        ax1.set_ylabel('frequency', fontsize = 9)
     if i == 5:
-        ax1.set_xlabel('X-value (m)', fontsize = 9)
+        ax1.set_xlabel('P$^*$', fontsize = 9)
     if i != 5:
         ax1.set_xticklabels([])
     ax1.set_xlim (0,0.08)
@@ -301,8 +315,17 @@ for gauge in Gauges:
     Slope, post_Slope, envidata_Slope =  ENVI_raster_binary_to_2d_array ("Input/Topography/%s/%s_slope.bil" % (gauge,gauge), gauge)
     Search_space, Crossover, bins, hist, Inflexion_point = define_search_space (DEM, Slope, Nodata_value)
     Search_space[Search_space==1] = Crossover[Search_space==1]
+    
+    
+    Rel_Slope = (np.amax(Slope)-np.amin(Slope[Slope > Nodata_value]))/np.amax(Slope)
+    Rel_DEM = (np.amax(DEM)-np.amin(DEM[DEM > Nodata_value]))/np.amax(DEM)
+    
+    #bins_S, hist_S = Distribution (Rel_Slope, Nodata_value)
+    #bins_Z, hist_Z = Distribution (Rel_DEM, Nodata_value)
 
     ax1.plot(bins, hist, color=plt.cm.winter(0.1*Metrix_gauges[i,0]))
+    #ax1.plot(bins_S, hist_S, '--',color=plt.cm.winter(0.1*Metrix_gauges[i,0]))
+    #ax1bis.plot(bins_Z, hist_Z, '-.',color=plt.cm.winter(0.1*Metrix_gauges[i,0]))
     Inflexion_index = np.where(hist < Inflexion_point)
     Inflexion_index = Inflexion_index[0]
     Inflexion_bin = bins[min(Inflexion_index)-1]
@@ -312,19 +335,32 @@ for gauge in Gauges:
 
         #---------------------------
         # Maps now
-        ax2 = plt.subplot2grid((12,5),(6,0), rowspan=6, colspan=4, axisbg='white')
+        ax2 = plt.subplot2grid((12,5),(6,0), rowspan=6, colspan=2, axisbg='white')
+        ax3 = plt.subplot2grid((12,5),(6,2), rowspan=6, colspan=2, axisbg='white')
+
+        # hide the spines between ax2 and ax3
+        ax2.spines['right'].set_visible(False)
+        ax3.spines['left'].set_visible(False)
+        ax3.set_yticklabels([])
+
         ax2.annotate('b.' , xy=(0.05,0.9), xycoords='axes fraction', fontsize=rcParams['font.size']-2, color='w') 
         
         majorLocator = MultipleLocator(30)
         majorFormatter = FormatStrFormatter('%d')
         ax2.xaxis.set_major_locator(majorLocator)
         ax2.yaxis.set_major_locator(majorLocator)
+        ax3.xaxis.set_major_locator(majorLocator)
+        ax3.yaxis.set_major_locator(majorLocator)
         
-        ax2.set_ylabel('Distance (m)', fontsize = 9)
-        ax2.set_xlabel('Distance (m)', fontsize = 9)
+        ax2.set_ylabel('y (m)', fontsize = 9)
+        ax2.set_xlabel('x (m)', fontsize = 9)
+        ax3.set_xlabel('x (m)', fontsize = 9)
         
         ax2.set_ylim (250,100)
-        ax2.set_xlim (100,250)
+        ax2.set_xlim (100,181)
+        ax3.set_ylim (250,100)
+        ax3.set_xlim (100,181)
+        
         
         # Set up the colour scheme
         Min_value = np.amin (Crossover[Crossover>Nodata_value])
@@ -333,19 +369,20 @@ for gauge in Gauges:
         # Plot the map
         Vmin = -0.1
         Vmax = 0.3
-        Map_SS = ax2.imshow(Crossover, interpolation='None', cmap=plt.cm.gist_earth, vmin=Vmin, vmax=Vmax)
-        Map_SS = ax2.imshow(Search_space_mask[:,0:181], interpolation='None', cmap=plt.cm.copper, vmin=Vmin, vmax=Vmax)
+        Map_SS = ax2.imshow(Crossover[:,0:181], interpolation='None', cmap=plt.cm.gist_earth, vmin=Vmin, vmax=Vmax)
+        Map_SS = ax3.imshow(Crossover[:,0:181], interpolation='None', cmap=plt.cm.gist_earth, vmin=Vmin, vmax=Vmax)
+        Map_SS = ax3.imshow(Search_space_mask[:,0:181], interpolation='None', cmap=plt.cm.copper, vmin=Vmin, vmax=Vmax)
         
         # Make the colourbars
-        ax12 = fig.add_axes([0.743, 0.115, 0.03, 0.295])
-        ax22 = fig.add_axes([0.773, 0.115, 0.03, 0.295])
+        ax12 = fig.add_axes([0.752, 0.126, 0.03, 0.274])
+        ax22 = fig.add_axes([0.782, 0.126, 0.03, 0.274])
 
         X_scheme = plt.cm.copper; X_norm = mpl.colors.Normalize(vmin=Vmin, vmax=Vmax)
         SS_scheme = plt.cm.gist_earth; SS_norm = mpl.colors.Normalize(vmin=Vmin, vmax=Vmax)
         bounds = [-0.1, 0, 0.1, 0.2,0.3, 0.4, 0.5]
         cb1 = mpl.colorbar.ColorbarBase(ax12, cmap=X_scheme, norm=X_norm, ticks = [], orientation='vertical')
         cb2 = mpl.colorbar.ColorbarBase(ax22, cmap=SS_scheme, norm=SS_norm, ticks = bounds, orientation='vertical')
-        cb2.set_label('X-value (m)', fontsize = 9)
+        cb2.set_label('P$^*$', fontsize = 9)
 
     i=i+1
 
@@ -358,11 +395,10 @@ top = 0.0      # the top of the subplots of the figure
 wspace = 0.0   # the amount of width reserved for blank space between subplots
 hspace = 0.0   # the amount of height reserved for white space between subplots
     
-subplots_adjust(left=left, bottom=bottom, right=None, top=None, wspace=None, hspace=hspace)
+subplots_adjust(left=left, bottom=bottom, right=None, top=None, wspace=wspace, hspace=hspace)
 
 
-plt.savefig('Output/Paper/0_Main_Fig2.png')"""
-
+plt.savefig('Output/Paper/0_Main_Fig2.png')
 
 
 
@@ -497,6 +533,16 @@ plt.savefig('Output/Paper/0_Main_Fig3.png')
 #---------------------------------------------------------------------------
 # Figure 4: This one shows a diagram of the process (a) and an array with filled-in platform (b) and cleaned-platform(c)
 
+fig=plt.figure(4, facecolor='White',figsize=[4.7,8])
+
+
+
+
+
+
+
+
+plt.savefig('Output/Paper/0_Main_Fig4.png')
 
 
 
@@ -537,6 +583,8 @@ for gauge in Gauges:
     Platform, post_Slope, envidata_Slope =  ENVI_raster_binary_to_2d_array ("Output/%s/%s_Marsh.bil" % (gauge,gauge), gauge)
     Confusion_matrix, post_Curvature, envidata_Curvature =  ENVI_raster_binary_to_2d_array ("Output/%s/%s_Confusion_DEM.bil" % (gauge,gauge), gauge)
 
+    
+
     # Set up the colour scheme
     Min_value = np.amin (DEM[DEM>Nodata_value])
     DEM_mask = np.ma.masked_where(Platform == 0, DEM)
@@ -548,10 +596,10 @@ for gauge in Gauges:
     Confusion_matrix2 [Confusion_matrix2 == -2] = DEM [Confusion_matrix2 == -2]
 
     # Plot the things
-    Map_TF = ax1.imshow(DEM, interpolation='None', cmap=plt.cm.Greys, vmin=-5, vmax=5)
-    Map_Marsh = ax1.imshow(DEM_mask, interpolation='None', cmap=plt.cm.gist_earth, vmin=0, vmax=8)
-    Map_FP = ax1.imshow(Confusion_matrix1, interpolation='None', cmap=plt.cm.Oranges, vmin=0, vmax=5)
-    Map_FN = ax1.imshow(Confusion_matrix2, interpolation='None', cmap=plt.cm.Purples, vmin=0, vmax=5)
+    Map_TF = ax1.imshow(DEM, interpolation='None', cmap=plt.cm.Greys, vmin=-2, vmax=5)
+    Map_Marsh = ax1.imshow(DEM_mask, interpolation='None', cmap=plt.cm.gist_earth, vmin=-1, vmax=6.5)
+    Map_FP = ax1.imshow(Confusion_matrix1, interpolation='None', cmap=plt.cm.Reds, vmin=-2, vmax=5)
+    Map_FN = ax1.imshow(Confusion_matrix2, interpolation='None', cmap=plt.cm.Blues, vmin=-1, vmax=6.5)
 
     
     # Only display a hind-picked (square) area
@@ -578,8 +626,7 @@ for gauge in Gauges:
     ax1.set_ylim(ymin,ymax)
           
     i=i+1
-        
-        
+             
         
 # Make the colourbars
 ax2 = fig.add_axes([0.175, 0.12, 0.3, 0.02])
@@ -587,36 +634,28 @@ ax3 = fig.add_axes([0.175, 0.10, 0.3, 0.02])
 ax4 = fig.add_axes([0.575, 0.12, 0.3, 0.02])
 ax5 = fig.add_axes([0.575, 0.10, 0.3, 0.02])
 
-TF_scheme = plt.cm.Greys; TF_norm = mpl.colors.Normalize(vmin=-4, vmax=8)
-Marsh_scheme = plt.cm.gist_earth; Marsh_norm = mpl.colors.Normalize(vmin=-4, vmax=8)
-FP_scheme = plt.cm.Oranges; FP_norm = mpl.colors.Normalize(vmin=-0, vmax=5)
-FN_scheme = plt.cm.Purples; FN_norm = mpl.colors.Normalize(vmin=-0, vmax=5)
+TF_scheme = plt.cm.Greys; TF_norm = mpl.colors.Normalize(vmin=-2, vmax=5)
+Marsh_scheme = plt.cm.gist_earth; Marsh_norm = mpl.colors.Normalize(vmin=-1, vmax=6.5)
+FP_scheme = plt.cm.Blues; FP_norm = mpl.colors.Normalize(vmin=-1, vmax=6.5)
+FN_scheme = plt.cm.Reds; FN_norm = mpl.colors.Normalize(vmin=-2, vmax=5)
 
 bounds_1 = [-4,-2,0,2,4,6,8]
 bounds_2 = [0,1,2,3,4,5]
 
-cb1 = mpl.colorbar.ColorbarBase(ax2, cmap=TF_scheme, norm=TF_norm, ticks = [], orientation='horizontal')
+cb1 = mpl.colorbar.ColorbarBase(ax2, cmap=FP_scheme, norm=TF_norm, ticks = [], orientation='horizontal')
 cb2 = mpl.colorbar.ColorbarBase(ax3, cmap=Marsh_scheme, norm=Marsh_norm, ticks = bounds_1, orientation='horizontal')
-cb3 = mpl.colorbar.ColorbarBase(ax4, cmap=FP_scheme, norm=FP_norm, ticks = [], orientation='horizontal')
-cb4 = mpl.colorbar.ColorbarBase(ax5, cmap=FN_scheme, norm=FN_norm, ticks = bounds_2, orientation='horizontal')
+cb3 = mpl.colorbar.ColorbarBase(ax4, cmap=FN_scheme, norm=Marsh_norm, ticks = [], orientation='horizontal')
+cb4 = mpl.colorbar.ColorbarBase(ax5, cmap=TF_scheme, norm=TF_norm, ticks = bounds_1, orientation='horizontal')
 cb2.set_label('Elevation (m)', fontsize = 9)
 cb4.set_label('Elevation (m)', fontsize = 9)
       
-ax2.annotate('True negatives', xy=(0.05,0.85), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-3)  
+ax2.annotate('False negatives', xy=(0.05,0.85), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-3)  
 ax3.annotate('True positives', xy=(0.35,0.85), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-3)  
 ax4.annotate('False positives', xy=(0.05,0.85), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-3)  
-ax5.annotate('False negatives', xy=(0.05,0.85), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-3)  
-    
-
-    
+ax5.annotate('True negatives', xy=(0.05,0.85), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-3)  
 
 
 plt.savefig('Output/Paper/0_Main_Fig5_noresample.png')
-
-
-
-
-
 
 # TICKS ARE EVERY 50m
 
@@ -624,70 +663,124 @@ plt.savefig('Output/Paper/0_Main_Fig5_noresample.png')
 
 #---------------------------------------------------------------------------
 # Figure 6 [1col]: Performance results for different resolutions
-fig=plt.figure(6, facecolor='White',figsize=[4.7,4])
+fig=plt.figure(6, facecolor='White',figsize=[4.7,5.0])
 
 # Set up the fonts and stuff
 matplotlib.rc('xtick', labelsize=9) 
-matplotlib.rc('ytick', labelsize=9)
-
-ax1 = plt.subplot2grid((3,1),(0,0),colspan=1, rowspan=1)
-ax3 = plt.subplot2grid((3,1),(1,0),colspan=1, rowspan=1)
-ax4 = plt.subplot2grid((3,1),(2,0),colspan=1, rowspan=1)
-
-ax1.set_ylim(0.36,1.05)
-ax3.set_ylim(0.36,1.05)
-ax4.set_ylim(0.36,1.05)
-ax1.set_xlim(0.5,11)
-ax3.set_xlim(0.5,11)
-ax4.set_xlim(0.5,11)
-
-
-
-ax1.annotate('a.', xy=(0.95,0.85), xycoords='axes fraction', fontsize=rcParams['font.size']-2, color='k') 
-ax3.annotate('b.', xy=(0.95,0.85), xycoords='axes fraction', fontsize=rcParams['font.size']-2, color='k') 
-ax4.annotate('c.', xy=(0.95,0.85), xycoords='axes fraction', fontsize=rcParams['font.size']-2, color='k') 
-
-
-
-ax1.set_ylabel('Accuracy', fontsize = 9)
-ax3.set_ylabel('Reliability', fontsize = 9)
-ax4.set_ylabel('Sensitivity', fontsize = 9)
-
-ax4.set_xlabel('x,y resolution (m)', fontsize = 9)
-
-ax1.set_xticklabels([])
-ax3.set_xticklabels([])
+matplotlib.rc('ytick', labelsize=8)
 
 width = 0.07
+filter_value = [0,1]
 
-i = 0
-for gauge in Gauges:
-    Accuracy = np.zeros(len(Resolutions),dtype=np.float)
-    Reliability = np.zeros(len(Resolutions),dtype=np.float)
-    Sensitivity = np.zeros(len(Resolutions),dtype=np.float)
-      
-    j=0
-    for res in Resolutions:
-        with open ("Output/%s/%s_%s_Metrix.pkl" % (gauge,gauge,res), 'rb') as input_file:
-            Metrix = cPickle.load(input_file)
-            Accuracy [j]= Metrix[0]
-            Reliability [j]= Metrix[1]
-            Sensitivity [j]= Metrix[2]
 
-        j = j+1
-    
-    with open ("Output/%s/%s_Metrix.pkl" % (gauge,gauge), 'rb') as input_file:
-        Metrix = cPickle.load(input_file)
-        Accuracy [0]= Metrix[0]
-        Reliability [0]= Metrix[1]
-        Sensitivity [0]= Metrix[2]
-    
-    ax1.bar(Resolutions_num + i*width, Accuracy, width, color=plt.cm.winter(0.1*Metrix_gauges[i,0]), linewidth = 0)    
-    ax3.scatter (Resolutions_num, Reliability, color=plt.cm.winter(0.1*Metrix_gauges[i,0]),edgecolors='none')
-    ax4.scatter (Resolutions_num, Sensitivity, facecolors='none', edgecolors=plt.cm.winter(0.1*Metrix_gauges[i,0]))
-     
-    i = i+1
 
+
+Acc_aggr = []
+Rel_aggr = []
+Sen_aggr = []
+
+W_Acc_aggr = []
+W_Rel_aggr = []
+W_Sen_aggr = []
+
+
+
+
+for filt in filter_value:
+
+    ax1 = plt.subplot2grid((6,1),(filt,0),colspan=1, rowspan=1)
+    ax2 = plt.subplot2grid((6,1),(filt+2,0),colspan=1, rowspan=1)
+    ax3 = plt.subplot2grid((6,1),(filt+4,0),colspan=1, rowspan=1)
+
+    ax1.set_ylim(0.56,1.05)
+    ax2.set_ylim(0.36,1.05)
+    ax3.set_ylim(0.36,1.05)
+
+    ax1.set_xlim(0.5,11)
+    ax2.set_xlim(0.5,11)
+    ax3.set_xlim(0.5,11)
+
+    majorLocator1 = MultipleLocator(0.1)
+    ax1.yaxis.set_major_locator(majorLocator1)
+    majorLocator2 = MultipleLocator(0.2)
+    ax2.yaxis.set_major_locator(majorLocator2)
+    ax3.yaxis.set_major_locator(majorLocator2)
+
+    ax1.annotate('a%s.' %(filt), xy=(0.93,0.80), xycoords='axes fraction', fontsize=rcParams['font.size']-2, color='k') 
+    ax2.annotate('b%s.'%(filt), xy=(0.93,0.80), xycoords='axes fraction', fontsize=rcParams['font.size']-2, color='k') 
+    ax3.annotate('c%s.'%(filt), xy=(0.93,0.80), xycoords='axes fraction', fontsize=rcParams['font.size']-2, color='k') 
+
+    if filt == 0:
+        ax1.set_ylabel('A-no filter', fontsize = 9)
+        ax2.set_ylabel('R-no filter', fontsize = 9)
+        ax3.set_ylabel('S-no filter', fontsize = 9)
+    else:
+        ax1.set_ylabel('A-Wiener', fontsize = 9)
+        ax2.set_ylabel('R-Wiener', fontsize = 9)
+        ax3.set_ylabel('S-Wiener', fontsize = 9)
+
+    ax1.set_xticklabels([])
+    ax2.set_xticklabels([])
+    if filt == 1:
+        ax3.set_xlabel('x,y resolution (m)', fontsize = 9)
+
+    i = 0
+    for gauge in Gauges:
+        Accuracy = np.zeros(len(Resolutions),dtype=np.float)
+        Reliability = np.zeros(len(Resolutions),dtype=np.float)
+        Sensitivity = np.zeros(len(Resolutions),dtype=np.float)
+        
+        if filt == 0:
+            j=0
+            for res in Resolutions:
+                with open ("Output/%s/%s_%s_Metrix_nofilter.pkl" % (gauge,gauge,res), 'rb') as input_file:
+                    Metrix = cPickle.load(input_file)
+                    Accuracy [j]= Metrix[0]
+                    Reliability [j]= Metrix[1]
+                    Sensitivity [j]= Metrix[2]
+                j = j+1
+                
+            Acc_aggr.append(Accuracy)
+            Rel_aggr.append(Reliability)
+            Sen_aggr.append(Sensitivity)
+
+            
+        else:
+            j=0
+            for res in Resolutions:
+                with open ("Output/%s/%s_%s_Metrix.pkl" % (gauge,gauge,res), 'rb') as input_file:
+                    Metrix = cPickle.load(input_file)
+                    Accuracy [j]= Metrix[0]
+                    Reliability [j]= Metrix[1]
+                    Sensitivity [j]= Metrix[2]
+                j = j+1
+                
+            W_Acc_aggr.append(Accuracy)
+            W_Rel_aggr.append(Reliability)
+            W_Sen_aggr.append(Sensitivity)
+
+        ax1.bar(Resolutions_num + i*width, Accuracy, width, color=plt.cm.winter(0.1*Metrix_gauges[i,0]), linewidth = 0)    
+        ax2.scatter (Resolutions_num, Reliability, color=plt.cm.winter(0.1*Metrix_gauges[i,0]),edgecolors='none')
+        ax3.scatter (Resolutions_num, Sensitivity, facecolors='none', edgecolors=plt.cm.winter(0.1*Metrix_gauges[i,0]))
+        i = i+1
+
+        
+Acc_aggr = np.asarray(Sen_aggr)
+Acc_mean = []
+for i in range(len(Resolutions)):
+    Acc_mean.append(np.mean(Acc_aggr[:,i]))
+ 
+print Acc_mean 
+
+
+W_Acc_aggr = np.asarray(W_Sen_aggr)
+W_Acc_mean = []
+for i in range(len(Resolutions)):
+    W_Acc_mean.append(np.mean(W_Acc_aggr[:,i]))
+ 
+print W_Acc_mean 
+        
+        
 left  = 0.15  # the left side of the subplots of the figure
 right = 0.2    # the right side of the subplots of the figure
 bottom = 0.10   # the bottom of the subplots of the figure
@@ -697,136 +790,460 @@ hspace = 0.02   # the amount of height reserved for white space between subplots
     
 subplots_adjust(left=left, bottom=bottom, right=None, top=None, wspace=None, hspace=hspace)
    
-    
+np.savetxt('Output/Paper/Acc_aggr.csv', Acc_aggr, delimiter = ' ')
 
-
-
-plt.savefig('Output/Paper/0_Main_Fig6_noresample.png')
-
-
+plt.savefig('Output/Paper/0_Main_Fig6_mashup.png')
 
 STOP
 
-    
+
 
 
 
 #---------------------------------------------------------------------------
-# Figure 7: This one shows the different performances classified by tidal range (a), type of coast (b)
-fig=plt.figure(7, facecolor='White',figsize=[4.7,5])
-matplotlib.rc('xtick', labelsize=9) 
+# Figure 7 [1col]: This one shows the differences in elevation distribution
+fig=plt.figure(7, facecolor='White',figsize=[3.2,5.5])
 
-# First map the map
-ax1 = plt.subplot2grid((7,2),(0,0),colspan=1, rowspan=7, axisbg='white')
+# Set up the fonts and stuff
+matplotlib.rc('xtick', labelsize=8) 
+matplotlib.rc('ytick', labelsize=8)
 
-# create Basemap
-m = Basemap(llcrnrlon=-6.5,llcrnrlat=49.5,urcrnrlon=3.5,urcrnrlat=59, resolution='i', projection='cass', lon_0=-4.36, lat_0=54.7)
-m.drawcoastlines()
-m.drawparallels(np.arange(-40,61.,2.), labels=[1,0,0,0], fontsize = 9)
-m.drawmeridians(np.arange(-20.,21.,2.), labels=[0,0,1,0], fontsize = 9)
-
-# Plot the points on it
-lats = [50.6, 51.8, 52.9, 51.5, 54.85, 54.1, 51.15]
-lons = [-1.9, 1.13, 0.8, 0.5, -3.3, -2.8, -3.1]
-Metrix_gauges = np.zeros((len(Gauges),5), dtype=np.float)
-
-#this is the annotation of the plot number
-ax1.annotate('a.', xy=(0.90,0.98), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-1) 
-
-
-# Load the tidal data
 i=0
+
+
+
 for gauge in Gauges:
+    ax1 = plt.subplot2grid((6,1),(i,0),colspan=1, rowspan=1,axisbg='white')
+      
+    if i == 5:
+        ax1.set_xlabel('Elevation (m)', fontsize = 9)   
+    ax1.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+    ax1.set_ylabel('f (%)', fontsize = 9)
+
+    ax1.annotate('a%s' %(i+1), xy=(0.05,0.925), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-2) 
+
+    # Load tidal data
     Metric1_tide, Metric2_tide, Metric3_tide, Subsample = Open_tide_stats ("Input/Tide/%s/%s_" % (gauge,gauge), gauge)
     Metrix_gauges[i,0] = np.mean (Metric2_tide[3])-np.mean (Metric2_tide[0])
+
+ 
+    # Load the data
+    DEM, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Input/Topography/%s/%s_1.0_DEM_clip_WFILT.bil" % (gauge,gauge), gauge) 
+        
+    Ref_Platform, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Input/Reference/%s/%s_marsh_DEM_clip.bil" % (gauge,gauge), gauge)
+    Ref_Platform [Ref_Platform==1] = DEM [Ref_Platform==1]
+    
+    Platform, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Output/%s/%s_1.0_Marsh.bil" % (gauge,gauge), gauge)
+    Platform [Platform>0] = DEM [Platform>0]
+          
+
+    bins_z, hist_z = Distribution (DEM, Nodata_value)
+    Elevation_range_z = np.arange(-5, max(bins_z), 0.1)    
+    
+    
+    bins_ref, hist_ref = Distribution (Ref_Platform, Nodata_value)
+    Elevation_range_ref = np.arange(-5, max(bins_ref), 0.1)
+
+    bins_M, hist_M = Distribution (Platform, Nodata_value)
+    Elevation_range_M = np.arange(-5, max(bins_M), 0.1)
+    
+    Ratio = (max(hist_z[hist_z < 0.2])/max(hist_M[hist_M < 0.2]))
+    
+    hist_z_copy = hist_z / Ratio
+
+    ax1.plot( bins_z, hist_z_copy*100, '-k', linewidth = 0.5)   
+    ax1.plot( bins_ref, hist_ref*100, '-r', linewidth = 0.8)   
+    ax1.fill_between( bins_M, -5, hist_M*100, color=plt.cm.winter(0.1*Metrix_gauges[i,0]), alpha = 0.8, linewidth = 0.1)
+
+    
+    # Set the ticks
+    A = 0.01
+    for x in range(len(hist_ref)-1):
+        if hist_ref[x]==0 and hist_ref[x+1]>0:
+            A = bins_ref[x]
+            break
+    xmin = max(0,A)
+    ymax = max(max(hist_ref[hist_ref<0.2]),max(hist_M[hist_M<0.2]))*100
+    
+    ax1.set_xlim (xmin = xmin)
+    ax1.set_ylim (ymin = 0, ymax = ymax*1.05)
+    
+    majorLocator1 = MultipleLocator(np.floor(100*ymax)/200)
+    ax1.yaxis.set_major_locator(majorLocator1)
+    majorLocator2 = MultipleLocator(1)
+    ax1.xaxis.set_major_locator(majorLocator2)
+    
+    
+    i=i+1
+    
+left  = 0.20  # the left side of the subplots of the figure
+right = 0.2    # the right side of the subplots of the figure
+bottom = 0.10   # the bottom of the subplots of the figure
+top = 0.0      # the top of the subplots of the figure
+wspace = 0.0   # the amount of width reserved for blank space between subplots
+hspace = 0.3   # the amount of height reserved for white space between subplots
+    
+subplots_adjust(left=left, bottom=bottom, right=None, top=None, wspace=wspace, hspace=hspace)
+
+
+plt.savefig('Output/Paper/0_Main_Fig7.png')
+
+
+
+
+#---------------------------------------------------------------------------
+# Figure 8: This one shows evolution of performance for degraded resolution in terms of area/perimeter or A/P
+
+fig=plt.figure(8, facecolor='White',figsize=[3.2,5])
+
+# Set up the fonts and stuff
+matplotlib.rc('xtick', labelsize=9) 
+matplotlib.rc('ytick', labelsize=8)
+
+ax1 = plt.subplot2grid((2,1),(0,0),colspan=1, rowspan=1,axisbg='white')
+ax2 = plt.subplot2grid((2,1),(1,0),colspan=1, rowspan=1,axisbg='white')
+
+ax1.set_xlabel('Reference area (ha)', fontsize = 9)   
+ax1.set_ylabel('Determined area (ha)', fontsize = 9)
+ax2.set_xlabel('Reference perimeter (km)', fontsize = 9)   
+ax2.set_ylabel('Determined perimeter (km)', fontsize = 9)
+
+ax1.set_xlim (0, 21)
+ax1.set_ylim (0, 21)
+ax2.set_xlim (0, 10)
+ax2.set_ylim (0, 10)
+
+ax1.annotate('a', xy=(0.05,0.925), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-2) 
+ax2.annotate('b', xy=(0.05,0.925), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-2) 
+
+Fill_range = np.array([0.,200.])
+ax1.plot(Fill_range,Fill_range,'k', linewidth = 0.5)
+ax1.fill_betweenx(Fill_range, Fill_range*0.95, Fill_range*1.05, facecolor='black', alpha = 0.15, linewidth = 0)
+ax2.plot(Fill_range,Fill_range,'k', linewidth = 0.5)
+ax2.fill_betweenx(Fill_range, Fill_range*0.95, Fill_range*1.05, facecolor='black', alpha = 0.15, linewidth = 0)
+
+
+i=0
+for gauge in Gauges:  
+    Area = np.zeros((2,len(Resolutions)),dtype = np.float)
+    Perimeter = np.zeros((2,len(Resolutions)),dtype = np.float)
+    
+    j=0
+    for res in Resolutions:
+        # Load the data
+        if j == 0:
+            Ref_Platform, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Input/Reference/%s/%s_marsh_DEM_clip.bil" % (gauge,gauge), gauge)  
+        if j == 0:
+            Platform, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Output/%s/%s_%s_Marsh.bil" % (gauge,gauge,res), gauge)
+        else:
+            Platform, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Output/%s/%s_%s_Marsh_R.bil" % (gauge,gauge,res), gauge)
+        
+        Ref_Platform[Ref_Platform==Nodata_value] = 0; Ref_Platform[Ref_Platform>0]=1
+        Area[0,j] = np.count_nonzero(Ref_Platform)/10000.
+        Perimeter[0,j] = (np.sum(Ref_Platform[:,1:] != Ref_Platform[:,:-1]) + np.sum(Ref_Platform[1:,:] != Ref_Platform[:-1,:]))/1000.
+        
+        Platform[Platform==Nodata_value] = 0; Platform[Platform>0]=1
+        Area[1,j] = np.count_nonzero(Platform)/10000.
+        Perimeter[1,j] = (np.sum(Platform[:,1:] != Platform[:,:-1]) + np.sum(Platform[1:,:] != Platform[:-1,:]))/1000.
+    
+        if j ==0:
+            ax1.scatter(Area[0,j],Area[1,j], color=plt.cm.winter(0.1*Metrix_gauges[i,0]), alpha = (1.-j/10.),linewidth = 1.2,edgecolor = 'r')
+            ax2.scatter(Perimeter[0,j],Perimeter[1,j], color=plt.cm.winter(0.1*Metrix_gauges[i,0]), alpha = (1.-j/10.),linewidth = 1.2, edgecolor='r')
+        else:
+            ax1.scatter(Area[0,j],Area[1,j], color=plt.cm.winter(0.1*Metrix_gauges[i,0]), alpha = (1.-j/10.),linewidth = 0.0)
+            ax2.scatter(Perimeter[0,j],Perimeter[1,j], color=plt.cm.winter(0.1*Metrix_gauges[i,0]), alpha = (1.-j/10.),linewidth = 0.0)
+
+        j = j+1 
+   
     i = i+1
 
-# Plot the points
-x, y = m(lons,lats)
-Scatt = ax1.scatter(x,y, s = 50, color=plt.cm.winter(0.1*Metrix_gauges[:,0]), alpha = 0.9, linewidth = 5)
 
-# Make a colourbar
-ax2 = fig.add_axes([0.125, 0.10, 0.352, 0.02])
-scheme = plt.cm.winter; norm = mpl.colors.Normalize(vmin=0, vmax=12)
-bounds = [0,2,4,6,8,10,12]
-cb = mpl.colorbar.ColorbarBase(ax2, cmap=scheme, norm=norm, ticks = bounds, orientation='horizontal')
-cb.set_label('Spring tidal range (m)', fontsize = 9)  
+
+left  = 0.20  # the left side of the subplots of the figure
+right = 0.2    # the right side of the subplots of the figure
+bottom = 0.10   # the bottom of the subplots of the figure
+top = 0.0      # the top of the subplots of the figure
+wspace = 0.0   # the amount of width reserved for blank space between subplots
+hspace = 0.25   # the amount of height reserved for white space between subplots
     
+subplots_adjust(left=left, bottom=bottom, right=None, top=None, wspace=wspace, hspace=hspace)
+
+
+plt.savefig('Output/Paper/0_Main_Fig8.png')
 
 
 
 
 
 
-    
-# Then make the other plot
-matplotlib.rc('xtick', labelsize=9)
-matplotlib.rc('ytick', labelsize=9)
-Annotations = ['b.1.','b.2.','b.3.','b.4.','b.5.','b.6.','b.7.']
+#------------------------------------------------------------------------------
+# Figure 9 [2col]: temporal evolution
+fig=plt.figure(9, facecolor='White',figsize=[4.7,3.6])
 
-i=0
-for gauge in Gauges:
-    ax3 = plt.subplot2grid((7,2),(i,1),colspan=1, rowspan=1,axisbg='white')
-    
-    ax3.set_xlim (0,8)
-    ax3.set_ylim (0, 0.1)
-    plt.yticks([0,0.04, 0.08], fontsize = 9)
-    if i == 6:
-        ax3.set_xlabel('Elevation (m)', fontsize = 9)
+# Set up the fonts and stuff
+matplotlib.rc('xtick', labelsize=8) 
+matplotlib.rc('ytick', labelsize=8)
+
+ax1 = plt.subplot2grid((4,4),(0,0),colspan=4, rowspan=4,axisbg='white')
+
+ax1.set_xlabel('x (m)', fontsize = 9)   
+ax1.set_ylabel('y (m)', fontsize = 9)
+
+#ax1.annotate('a.', xy=(0.05,0.95), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-2) 
+
+ax1.xaxis.tick_top()
+ax1.xaxis.set_label_position('top')
+
+Dates = ["200703","200710"]
+d=0
+for date in Dates:
+    # Load the relevant data
+    if d == 0:
+        DEM1, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Input/Topography/HIN_hist/HIN_%s_DEM_clip.bil" %(date), "HIN") 
+        DEM1[np.isnan(DEM1)] = Nodata_value 
+        Ref_Platform1, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Input/Reference/HIN_hist/HIN_%s_ref_DEM_clip.bil" %(date), "HIN")
+        Platform1, post_Slope, envidata_Slope =  ENVI_raster_binary_to_2d_array ("Output/HIN_hist/HIN_%s_Marsh.bil" % (date), gauge)
+
     else:
-        ax3.set_xticklabels([])     
-    if i == 3:
-        ax3.set_ylabel('Frequency', fontsize = 9)
-    ax3.yaxis.tick_right()
+        DEM2, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Input/Topography/HIN_hist/HIN_%s_DEM_clip.bil" %(date), "HIN") 
+        DEM2[np.isnan(DEM2)] = Nodata_value 
+        Ref_Platform2, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Input/Reference/HIN_hist/HIN_%s_ref_DEM_clip.bil" %(date), "HIN")
+        Platform2, post_Slope, envidata_Slope =  ENVI_raster_binary_to_2d_array ("Output/HIN_hist/HIN_%s_Marsh.bil" % (date), gauge)
+        
+        Hillshade, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Input/Topography/HIN_hist/HIN_%s_hs.bil" %(date), "HIN") 
 
+    d = d+1
 
-    # Load the data
-    DEM, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Input/Topography/%s/%s_DEM_WFILT.bil" % (gauge,gauge), gauge)
-    
-    Platform, post_DEM, envidata_DEM =  ENVI_raster_binary_to_2d_array ("Output/%s/%s_Marsh.bil" % (gauge,gauge), gauge)
-    Platform [Platform>0] = DEM [Platform>0]
-    
-    
-    Metric1_tide, Metric2_tide, Metric3_tide, Subsample = Open_tide_stats ("Input/Tide/%s/%s_" % (gauge,gauge), gauge)
-    Metrix_gauges[i,0] = np.mean (Metric2_tide[3])-np.mean (Metric2_tide[0])
-    
     
     
 
-    bins, hist = Distribution (DEM, Nodata_value)
-    Elevation_range = np.arange(0, max(bins), 0.1)
+# Draw the marsh perimeters
+Platform1[Platform1>0] = 1
+Platform2[Platform2>0] = 1
+Ref_Platform1[Ref_Platform1>0] = 1
+Ref_Platform2[Ref_Platform2>0] = 1
+
+
+
+Platform_change = np.zeros((len(Platform1), len(Platform1[0,:])), dtype = np.float)
+Ref_Platform_change = np.zeros((len(Platform1), len(Platform1[0,:])), dtype = np.float)
+
+Gain = np.where(Platform1<Platform2)
+Loss = np.where(Platform1>Platform2)
+
+Ref_Gain = np.where(Ref_Platform1<Ref_Platform2)
+Ref_Loss = np.where(Ref_Platform1>Ref_Platform2)
+
+Platform_change[Gain] = 1
+Platform_change[Loss] = -1
+
+Ref_Platform_change[Ref_Gain] = 1
+Ref_Platform_change[Ref_Loss] = -1
+
+
+Outline1 = Outline (Platform1,2)
+Outline2 = Outline (Platform2,2)
+Ref_Outline1 = Outline (Ref_Platform1,2)
+Ref_Outline2 = Outline (Ref_Platform2,2)
+
+
+# Mask the low values
+Outline1_mask = np.ma.masked_where(Outline1 < 2, Outline1)
+Outline2_mask = np.ma.masked_where(Outline2 < 2, Outline2)
+
+Ref_Outline1_mask = np.ma.masked_where(Ref_Outline1 < 2, Ref_Outline1)
+Ref_Outline2_mask = np.ma.masked_where(Ref_Outline2 < 2, Ref_Outline2)
+
+
+
+
+Map_hs = ax1.imshow(Hillshade[5:120,50:245], interpolation='None', cmap=plt.cm.gray, vmin=94, vmax=231)
+Map_Marsh1 = ax1.imshow(DEM2[5:120,50:245]-DEM1[5:120,50:245], interpolation='None', cmap=plt.cm.seismic, vmin=-1.5, vmax=1.5, alpha=0.6)
+Map_Marsh1 = ax1.imshow(Ref_Outline1_mask[5:120,50:245], interpolation='None', cmap=plt.cm.winter, vmin=0, vmax=2, alpha=0.5)
+Map_Marsh1 = ax1.imshow(Ref_Outline2_mask[5:120,50:245], interpolation='None', cmap=plt.cm.autumn, vmin=1, vmax=3, alpha=0.5)
+Map_Marsh1 = ax1.imshow(Outline1_mask[5:120,50:245], interpolation='None', cmap=plt.cm.winter, vmin=0, vmax=2, alpha=1)
+Map_Marsh1 = ax1.imshow(Outline2_mask[5:120,50:245], interpolation='None', cmap=plt.cm.autumn, vmin=1, vmax=3, alpha=1)
+
+
+# Make the colourbar
+ax12 = fig.add_axes([0.11, 0.12, 0.79, 0.02])
+Diff_scheme = plt.cm.seismic; TF_norm = mpl.colors.Normalize(vmin=-1.5, vmax=1.5)
+cb1 = mpl.colorbar.ColorbarBase(ax12, cmap=Diff_scheme, norm=TF_norm, orientation='horizontal')
+cb1.set_label('Elevation difference (m)', fontsize = 9)
+
+  
     
-    bins_M, hist_M = Distribution (Platform, Nodata_value)
-    Elevation_range_M = np.arange(0, max(bins_M), 0.1)
+left  = 0.11  # the left side of the subplots of the figure
+right = 0.2    # the right side of the subplots of the figure
+bottom = 0.0   # the bottom of the subplots of the figure
+top = 0.0      # the top of the subplots of the figure
+wspace = 0.1   # the amount of width reserved for blank space between subplots
+hspace = 0.20   # the amount of height reserved for white space between subplots
     
-    
-    ax3.fill_between(Elevation_range, 0, 1, where=Elevation_range<=max(Metric2_tide[3]), facecolor='blue', alpha = 0.2, linewidth = 0)
-    ax3.fill_between(Elevation_range, 0, 1, where=Elevation_range<=np.mean(Metric2_tide[3]), facecolor='blue', alpha = 0.2, linewidth = 0)
-    ax3.fill_between(Elevation_range, 0, 1, where=Elevation_range<=np.mean(Metric2_tide[2]), facecolor='blue', alpha = 0.2, linewidth = 0)
-    
-    ax3.plot( bins, hist, color=plt.cm.winter(0.1*Metrix_gauges[i,0]))
-    ax3.plot( bins_M, hist_M, 'r') #color=plt.cm.winter(0.1*Metrix_gauges[i,0]))
-
-    
-    ax3.annotate(Annotations[i], xy=(0.80,0.925), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-2) 
-
-
-    i=i+1
+subplots_adjust(left=left, bottom=bottom, right=None, top=None, wspace=wspace, hspace=hspace)
 
 
 
-plt.savefig('Output/Paper/0_Fig7.png')
+plt.savefig('Output/Paper/0_Main_Fig9.png')
 
 
 
 STOP
+    
+    
+
+    
+# Second plot
+ax2 = plt.subplot2grid((6,4),(4,0),colspan=4, rowspan=2,axisbg='white')
+
+ax2.set_xlabel('Elevation (m)', fontsize = 9)   
+ax2.set_ylabel('PDF', fontsize = 9)
+ax2.annotate('b.', xy=(0.05,0.925), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-2) 
 
 
-#---------------------------------------------------------------------------
-# Figure 8: This one shows evolution of performance for degraded resolution. Look at relief in the thing too, or position within the tidal frame. Still in design
+#Ref_Platform1 = np.copy(Ref_Platform1[5:120,50:245])
+#Ref_Platform2 = np.copy(Ref_Platform2[5:120,50:245])
+#Platform1 = np.copy(Platform1[5:120,50:245])
+#Platform2 = np.copy(Platform2[5:120,50:245])
+
+Ref_Platform_change = np.copy(Ref_Platform_change[5:120,50:245])
+Platform_change = np.copy(Platform_change[5:120,50:245])
+
+#Ref_TF1 = np.copy(Ref_Platform1)
+#Ref_TF2 = np.copy(Ref_Platform2)
+#TF1 = np.copy(Platform1)
+#TF2 = np.copy(Platform2)
+
+Ref_Platform_change[Ref_Platform_change!=0] = DEM2 [Ref_Platform_change!=0] - DEM1 [Ref_Platform_change!=0]
+Platform_change[Platform_change!=0] = DEM2 [Platform_change!=0] - DEM1 [Platform_change!=0]
+
+#Ref_Platform1[Ref_Platform1>0] = DEM1 [Ref_Platform1>0]
+#Ref_Platform2[Ref_Platform2>0] = DEM2 [Ref_Platform2>0]
+#Ref_TF1[Ref_TF1==0] = DEM1 [Ref_TF1==0]
+#Ref_TF2[Ref_TF2==0] = DEM2 [Ref_TF2==0]
+
+#Platform1[Platform1>0] = DEM1 [Platform1>0]
+#Platform2[Platform2>0] = DEM2 [Platform2>0]
+#TF1[TF1==0] = DEM1 [TF1==0]
+#TF2[TF2==0] = DEM2 [TF2==0]
+
+
+bins_ref, hist_ref = Distribution (Ref_Platform_change, Nodata_value)
+bins, hist = Distribution (Platform_change, Nodata_value)
+
+
+#bins_ref1, hist_ref1 = Distribution (Ref_Platform1, Nodata_value)
+#bins_ref2, hist_ref2 = Distribution (Ref_Platform2, Nodata_value)
+
+#bins_TF_ref1, hist_TF_ref1 = Distribution (Ref_TF1, Nodata_value)
+#bins_TF_ref2, hist_TF_ref2 = Distribution (Ref_TF2, Nodata_value)
+
+#bins_1, hist_1 = Distribution (Ref_Platform1, Nodata_value)
+#bins_2, hist_2 = Distribution (Ref_Platform2, Nodata_value)
+
+#bins_TF_1, hist_TF_1 = Distribution (TF1, Nodata_value)
+#bins_TF_2, hist_TF_2 = Distribution (TF2, Nodata_value)
 
 
 
+#ax2.plot( bins_TF_ref1, hist_TF_ref1, '--', color = plt.cm.PRGn(255), linewidth = 0.8, alpha = 0.6)   
+#ax2.plot( bins_TF_ref2, hist_TF_ref2, '--', color = plt.cm.cool(255),linewidth = 0.8, alpha = 0.6)   
+
+#ax2.plot( bins_TF_1, hist_TF_1, '--', color = plt.cm.PRGn(255), linewidth = 0.8, alpha = 1)   
+#ax2.plot( bins_TF_2, hist_TF_2, '--', color = plt.cm.cool(255),linewidth = 0.8, alpha = 1)
+
+
+#ax2.plot( bins_ref1, hist_ref1, color = plt.cm.PRGn(230), linewidth = 0.8, alpha = 0.6)   
+#ax2.plot( bins_ref2, hist_ref2, color = plt.cm.cool(255),linewidth = 0.8, alpha = 0.6)   
+
+#ax2.plot( bins_1, hist_1, color = plt.cm.PRGn(230), linewidth = 0.8, alpha = 1)   
+#ax2.plot( bins_2, hist_2, color = plt.cm.cool(255),linewidth = 0.8, alpha = 1)  
+
+
+
+#ax2.plot( bins_ref, hist_ref, 'k', linewidth = 0.8, alpha = 0.6)   
+#ax2.plot( bins, hist, 'k',linewidth = 0.8, alpha = 1)  
+
+
+
+#ax2.fill_between( bins_M, -5, hist_M, color=plt.cm.winter(0.1*Metrix_gauges[i,0]), alpha = 0.8, linewidth = 0.1)
+
+
+# Set the ticks
+#A = 0.01
+#for x in range(len(hist_ref)-1):
+    #if hist_ref[x]==0 and hist_ref[x+1]>0:
+        #A = bins_ref[x]
+        #break
+#xmin = max(0,A)
+#ymax = max(max(hist_ref[hist_ref<0.2]),max(hist_M[hist_M<0.2]))
+
+#ax2.set_xlim (xmin = 5)
+#ax2.set_ylim (ymin = 0, ymax = 0.01)
+
+#majorLocator1 = MultipleLocator(np.floor(100*ymax)/200)
+#ax1.yaxis.set_major_locator(majorLocator1)
+#majorLocator2 = MultipleLocator(1)
+#ax1.xaxis.set_major_locator(majorLocator2)
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+
+    
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+#-----------------------------------------------------------
 
 
 
@@ -1570,6 +1987,74 @@ plt.savefig('Input/Bandspectrum_BOU.png')
 
 
 #new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_Band4, "Input/NDVI.bil", post_Band4, NDVI)
+
+
+
+
+
+
+
+
+#----------------------------------------------------------------
+# Figure: Displays map, Pie chart and R/S values
+fig=plt.figure(1, facecolor='White',figsize=[10,6])
+
+# a/ Map
+ax = plt.subplot2grid((3,2),(0,0),colspan=1, rowspan=3)
+Map = ax.imshow(Confusion_matrix, interpolation = 'None', cmap = palette, alpha = 0.8, norm=colors.Normalize(vmin=-2.0, vmax=2.0))
+ax.set_title('a. Map of the confusion matrix')
+
+
+# b/ Pie
+ax = plt.subplot2grid((3,2),(0,1),colspan=1, rowspan=2)
+labels = 'TP', 'TN', 'FP', 'FN'
+sizes = [True_positive, True_negative, False_positive, False_negative]
+colormap = [plt.cm.RdYlGn(200), plt.cm.RdYlGn(256), plt.cm.RdYlGn(64), plt.cm.RdYlGn(0)]
+ax.pie(sizes, labels=labels, autopct='%1.0f%%',shadow=False, startangle=90, colors = colormap)
+ax.axis('equal')
+
+from matplotlib import font_manager as fm
+proptease = fm.FontProperties()
+proptease.set_size('xx-small')
+
+ax.set_title('b. Performance of the algorithm')
+
+plt.margins(0.3)
+
+
+
+
+
+# c/ Metrix
+ax = plt.subplot2grid((3,2),(2,1),colspan=1, rowspan=1)
+metrix = ('R', 'S')
+y_pos = np.arange(len(metrix))
+performance = np.array([Reliability, Sensitivity])
+performance_colour = performance**2
+
+ax.barh(y_pos, performance, align='center', color=plt.cm.RdYlGn(performance_colour))
+ax.set_yticks(y_pos); ax.set_yticklabels(metrix)
+ax.invert_yaxis(); ax.invert_xaxis()  
+ax.set_xlabel('non-dimensional value')
+plt.yticks(y_pos, metrix, rotation=0)
+ax.set_xlim(0,1)
+plt.margins(0.3)
+ax.set_title('c. Reliability and Sensitivity of the algorithm')
+
+
+
+
+
+plt.savefig('Confusion.png')
+
+
+
+
+
+
+
+
+
 
 
 STOP"""

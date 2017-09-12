@@ -85,9 +85,6 @@ def make_driver(templatedir,templatefile, gauge, res, Wfilter):
     dst.close
 
 
-#------------------------------------------------------------------
-#Use the cookbook
-#https://pcjericks.github.io/py-gdalogr-cookbook/
 
 #------------------------------------------------------------------
 # This is important
@@ -96,12 +93,12 @@ Nodata_value = -9999 # This is the value for empty DEM cells
 
 #------------------------------------------------------------------
 #These are the tide gauges next to the marshes we work on, sorted by Tidal Range
-Gauges=["BOU","FEL", "CRO", "SHE", "WOR", "HEY", "HIN"] 
-Gauges=["WOR"] 
+Gauges=["BOU","FEL", "CRO", "SHE", "HEY", "HIN"] 
+Gauges=["HEY", "HIN"] 
+#Gauges=["WOR"] 
 
 # And these are the resolutions we work on, expressed in dm
 Resolutions=["1.0", "1.5", "2.0", "2.5", "3.0", "4.0", "5.0", "7.5", "10.0"] 
-#Resolutions=["1.5", "2.0", "2.5", "3.0", "4.0", "5.0", "7.5", "10.0"] 
 Resolutions_num = np.asarray(Resolutions).astype(float) /10.
 
 

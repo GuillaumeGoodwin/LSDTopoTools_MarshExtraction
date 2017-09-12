@@ -1,57 +1,35 @@
 """
-This is a Python script to prepare files for analysis"""
+This is a Python script to prepare DEM files for the automated topographic detection of saltmarshes. This file is particularly important and performs the following actions:
+1. Convert your DEM into the ENVI format used by LSDTopoTools
+2. Apply a Wiener filter (optional)
+3. Calculate basic topographic analysis (hillshade, slope and curvature)
+"""
 
-#Set up display environment in putty
+#------------------------------------------------------------------
+#0. Set up display environment in putty if you are working on a terminal with no graphical interface.
 import matplotlib
 matplotlib.use('Agg')
 
-#----------------------------------------------------------------
+
+#------------------------------------------------------------------
 #1. Load useful Python packages
 import os
 import sys
-import matplotlib.mlab as mlab
-import matplotlib.pyplot as plt
-import numpy as np
-import functools
-import math as mt
-import cmath
-import scipy as sp
-import scipy.stats as stats
-from datetime import datetime
-import cPickle
-from matplotlib import cm
-from pylab import *
-import functools
-import matplotlib.ticker as tk
-from matplotlib import rcParams
-from mpl_toolkits.axes_grid1.inset_locator import *
-import matplotlib.gridspec as gridspec
-from matplotlib.ticker import MultipleLocator, FormatStrFormatter
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-import itertools as itt
-from osgeo import gdal, osr
-import matplotlib.ticker as tk
-from matplotlib import rcParams
-from mpl_toolkits.axes_grid1.inset_locator import *
-import matplotlib.gridspec as gridspec
-from matplotlib.ticker import MultipleLocator, FormatStrFormatter
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from osgeo import gdal, gdalconst
-from osgeo.gdalconst import *
-
 
 
 #------------------------------------------------------------------
-#Use the cookbook
-#https://pcjericks.github.io/py-gdalogr-cookbook/
+#2. Set up the important variables
+
+#Select the file names (or partial file names) you are working with
+Gauges=["HIN5", "HIN10", "HIN15", "HIN20", "HIN25", "HIN30", "HIN40", "HIN50", "HIN75", "HIN100"] #resolution in dm
+
+# Set up value for empty DEM cells
+Nodata_value = -9999
 
 #------------------------------------------------------------------
-#These are the resolutions we work on
-Gauges=["HIN5", "HIN10", "HIN15", "HIN20", "HIN25", "HIN30", "HIN40", "HIN50", "HIN75", "HIN100"] # Sorted by resolution in dm
-Gauges=["HIN20"] # Sorted by resolution in dm
+#3. Run the preparation script. 
 
-Nodata_value = -9999 # This is the value for empty DEM cells
-
+"""NOTE: in the test version make sure you only need to run this script once"""
 
 for gauge in Gauges:
 
@@ -62,8 +40,8 @@ for gauge in Gauges:
     #sourcefile = "%sdm_DEM.asc" % (gauge)
     #destinationfile = "%sdm_DEM.bil" % (gauge)
     #os.system("gdal_translate -of ENVI -a_srs EPSG:27700 " + sourcefile + " " +  destinationfile)
-
-
+    #Useful page for further use of GDAL: https://pcjericks.github.io/py-gdalogr-cookbook/
+    
 
     #### Run this from the following directory:
     # /home/s1563094/Datastore/Software/LSDTopoTools/LSDTopoTools_ChannelExtraction/driver_functions_ChannelExtraction
@@ -82,26 +60,4 @@ for gauge in Gauges:
     sourcedir = "/home/s1563094/Datastore/Software/LSDTopoTools/LSDTopoTools_MarshExtraction/Input/Topography/HIN_degraded/ "
     driverfile = "%s_slope_curv.LSDTT_driver " % (gauge)
     os.system("./LSDTT_analysis_from_paramfile.out " + sourcedir + driverfile)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
