@@ -94,19 +94,23 @@ Nodata_value = -9999 # This is the value for empty DEM cells
 #------------------------------------------------------------------
 #These are the tide gauges next to the marshes we work on, sorted by Tidal Range
 Gauges=["BOU","FEL", "CRO", "SHE", "HEY", "HIN"] 
+Gauges=["BOU","FEL", "CRO"] 
+
 
 
 # Here are the 3 optimisation points
 Opt1=["-2.0", "-1.8", "-1.6", "-1.4", "-1.2", "-1.0", "-0.8", "-0.6", "-0.4", "-0.2"] 
+Opt1=["-2.0"] # The optimal value, equals with -1.8
 Opt1_num = np.asarray(Opt1).astype(float)
 
-Opt2=["1.0"]  
+Opt2=["0.50", "0.55", "0.60", "0.65", "0.70", "0.75", "0.80", "0.85", "0.90", "0.95"]  
+Opt2=["0.85"] # The optimal value, equals with 0.80
 Opt2_num = np.asarray(Opt2).astype(float)
-opt2_num = 1
 
-Opt3=["1.0"] 
+
+Opt3=["2.0", "4.0", "6.0", "8.0", "10.0", "12.0", "14.0", "16.0", "18.0", "20.0"] # This is necessarily a round number, but please keep the float format
 Opt3_num = np.asarray(Opt3).astype(float)
-opt3_num = 1
+
 
 #------------------------------------------------------------------
 # First, you need to prepare the data
@@ -133,13 +137,29 @@ for gauge in Gauges:
     Reference, post_Reference, envidata_Reference =  ENVI_raster_binary_to_2d_array (directory+dstfile, gauge)
 
     
-    # Then take care of your input DEM
+    """# Then take care of your input DEM
     print "Converting Input DEM files to ENVI format of the right domain"
     directory = "Input/Topography/%s/" % (gauge)
-    cutfile = "Input/Reference/%s/%s_domain2.shp" % (gauge,gauge)
+    cutfile = "Input/Reference/%s/%s_domain.shp" % (gauge,gauge)
     srcfile = "%s_trans.asc" % (gauge)
     dstfile = "%s_DEM_clip.bil" % (gauge)
     os.system("gdalwarp -of ENVI -t_srs EPSG:27700 -cutline " + cutfile + " -crop_to_cutline " + directory+srcfile + " " +  directory+dstfile)
+    
+    # Then take care of your input Slope
+    print "Converting Input DEM files to ENVI format of the right domain"
+    directory = "Input/Topography/%s/" % (gauge)
+    cutfile = "Input/Reference/%s/%s_domain.shp" % (gauge,gauge)
+    srcfile = "%s_slope_big.bil" % (gauge)
+    dstfile = "%s_slope.bil" % (gauge)
+    os.system("gdalwarp -of ENVI -t_srs EPSG:27700 -cutline " + cutfile + " -crop_to_cutline " + directory+srcfile + " " +  directory+dstfile)
+    
+    # Then take care of your input Curvature
+    print "Converting Input DEM files to ENVI format of the right domain"
+    directory = "Input/Topography/%s/" % (gauge)
+    cutfile = "Input/Reference/%s/%s_domain.shp" % (gauge,gauge)
+    srcfile = "%s_curvature_big.bil" % (gauge)
+    dstfile = "%s_curvature.bil" % (gauge)
+    os.system("gdalwarp -of ENVI -t_srs EPSG:27700 -cutline " + cutfile + " -crop_to_cutline " + directory+srcfile + " " +  directory+dstfile)"""
 
     
     
@@ -160,42 +180,46 @@ for gauge in Gauges:
     #print " Loading Channels"
     #Channels, post_Channels, envidata_Channels =  ENVI_raster_binary_to_2d_array ("LiDAR_DTM_1m/%s/%s_%s_Channels_SO_wiener.bil" % (gauge,gauge,res), gauge)
 
-
-
     
     i=0
     for opt1 in Opt1:
         opt1_num = float(opt1)
+        
+        for opt2 in Opt2:
+            opt2_num = float(opt2)
+            
+            for opt3 in Opt3:
+                opt3_num = float(opt3)
     
-        print "Identifying the platform and scarps"
-        DEM_work = np.copy(DEM)
-        Search_space, Scarps, Platform = MARSH_ID(DEM_work, Slope, Curvature, Metric2_tide, Nodata_value, opt1_num, opt2_num, opt3_num)
-        Platform_work = np.copy(Platform)
-        Scarps[Scarps == 0] = Nodata_value
-        
-        
-        #------------------------------------------------------------------------------------------------------
-        #Save the results
-        print "Saving marsh features"
-        new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_DEM, "Output/%s/%s_O1_%s_Search_space_nofilter.bil" % (gauge, gauge,opt1), post_DEM, Search_space)
-        
-        new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_DEM, "Output/%s/%s_O1_%s_Scarps_nofilter.bil" % (gauge, gauge,opt1), post_DEM, Scarps)
-        
-        new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_DEM, "Output/%s/%s_O1_%s_Marsh_nofilter.bil" % (gauge, gauge,opt1), post_DEM, Platform)
-        
-        #---------------------------------------------------------------
-        # Calculate the performances of your algorithm
+                print "Identifying the platform and scarps"
+                DEM_work = np.copy(DEM)
+                Search_space, Scarps, Platform = MARSH_ID(DEM_work, Slope, Curvature, Metric2_tide, Nodata_value, opt1_num, opt2_num, opt3_num)
+                Platform_work = np.copy(Platform)
+                Scarps[Scarps == 0] = Nodata_value
 
-   
-        print " Loading Marsh"
-        Platform_work, post_Platform, envidata_Platform =  ENVI_raster_binary_to_2d_array ("Output/%s/%s_O1_%s_Marsh_nofilter.bil" % (gauge,gauge,opt1), gauge)
 
-        print "Measuring performances"
-        Confusion_matrix, Performance, Metrix = Confusion (Platform_work, Reference, Nodata_value)
-        new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_Platform, "Output/%s/%s_O1_%s_Confusion_DEM_nofilter.bil" % (gauge, gauge,opt1), post_Platform, Confusion_matrix)
+                #------------------------------------------------------------------------------------------------------
+                #Save the results
+                print "Saving marsh features"
+                new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_DEM, "Output/%s/%s_O1_%s_O2_%s_O3_%s_Search_space_nofilter.bil" % (gauge, gauge, opt1, opt2, opt3), post_DEM, Search_space)
 
-        cPickle.dump(Performance,open("Output/%s/%s_O1_%s_Performance_nofilter.pkl" % (gauge,gauge,opt1), "wb"))
-        cPickle.dump(Metrix,open("Output/%s/%s_O1_%s_Metrix_nofilter.pkl" % (gauge,gauge,opt1), "wb"))
+                new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_DEM, "Output/%s/%s_O1_%s_O2_%s_O3_%s_Scarps_nofilter.bil" % (gauge, gauge,opt1, opt2, opt3), post_DEM, Scarps)
+
+                new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_DEM, "Output/%s/%s_O1_%s_O2_%s_O3_%s_Marsh_nofilter.bil" % (gauge, gauge,opt1, opt2, opt3), post_DEM, Platform)
+
+                #---------------------------------------------------------------
+                # Calculate the performances of your algorithm
+
+
+                print " Loading Marsh"
+                Platform_work, post_Platform, envidata_Platform =  ENVI_raster_binary_to_2d_array ("Output/%s/%s_O1_%s_O2_%s_O3_%s_Marsh_nofilter.bil" % (gauge,gauge, opt1, opt2, opt3), gauge)
+
+                print "Measuring performances"
+                Confusion_matrix, Performance, Metrix = Confusion (Platform_work, Reference, Nodata_value)
+                new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_Platform, "Output/%s/%s_O1_%s_O2_%s_O3_%s_Confusion_DEM_nofilter.bil" % (gauge, gauge, opt1, opt2, opt3), post_Platform, Confusion_matrix)
+
+                cPickle.dump(Performance,open("Output/%s/%s_O1_%s_O2_%s_O3_%s_Performance_nofilter.pkl" % (gauge,gauge,opt1, opt2, opt3), "wb"))
+                cPickle.dump(Metrix,open("Output/%s/%s_O1_%s_O2_%s_O3_%s_Metrix_nofilter.pkl" % (gauge,gauge, opt1, opt2, opt3), "wb"))
 
 
 

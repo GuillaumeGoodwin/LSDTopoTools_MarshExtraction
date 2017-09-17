@@ -93,10 +93,14 @@ def make_driver(templatedir,templatefile, gauge, Wfilter):
 # This is important
 Nodata_value = -9999 # This is the value for empty DEM cells
 
+opt1_num = -2.0
+opt2_num = 0.85
+opt3_num = 8.0
+
 
 #------------------------------------------------------------------
 #These are the tide gauges next to the marshes we work on, sorted by Tidal Range
-Gauges=["HIN_200703","HIN_200710", "HIN_200909", "HIN_201103", "HIN_201205", "HIN_201302", "HIN_201402","HIN_201410"] 
+Gauges=["HIN_200703","HIN_200710"]#, "HIN_200909", "HIN_201103", "HIN_201205", "HIN_201302", "HIN_201402","HIN_201410"] 
 
 #------------------------------------------------------------------
 # First, you need to prepare the data
@@ -182,7 +186,7 @@ for gauge in Gauges:
     
     print "Identifying the platform and scarps"
     DEM_work = np.copy(DEM)
-    Search_space, Scarps, Platform = MARSH_ID(DEM_work, Slope, Curvature, Metric2_tide, Nodata_value)
+    Search_space, Scarps, Platform = MARSH_ID(DEM_work, Slope, Curvature, Metric2_tide, Nodata_value, opt1_num, opt2_num, opt3_num)
     Platform_work = np.copy(Platform)
     Scarps[Scarps == 0] = Nodata_value
 

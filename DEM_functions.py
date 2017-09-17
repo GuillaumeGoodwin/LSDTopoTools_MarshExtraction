@@ -211,6 +211,9 @@ def define_search_space (DEM, Slope, Nodata_value,opt):
     print 'Choosing a holiday destination ...'
     Height = len(DEM); Width = len(DEM[0,:])
     Search_space = np.zeros((Height,Width), dtype=np.float)
+    
+    # Initialisation of the Inflexion point
+    Inflexion_point = 0
 
     # We calculate the relative relief of the DEM to have values of elevation between 0 and 1
     Relief = DEM-np.amin(DEM[DEM > Nodata_value])
@@ -563,7 +566,7 @@ def Clean_ridges (Peaks, DEM, Slope, Tidal_metric, Nodata_value,opt):
         Kernel_slope = kernel(Slope, 9, x, y)
 
         #KEEP THIS
-        if np.amax(Kernel_DEM)/Threshold < 0.6:
+        if np.amax(Kernel_DEM)/Threshold < opt:
             Peaks[x,y] = 0
 
 
@@ -704,13 +707,13 @@ def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value,opt):
             Counter = 0 
     
         #If you stay long enough under (10 is arbitrary for now), initiate cutoff and stop the search
-        if Counter > 10:
+        if Counter > opt:
             Cutoff = j
             Cutoff_Z = Platform_bins[Cutoff]
             break
         
     # If you stay under for more than 5, set a Cutoff_Z value but keep searching    
-    if Counter > 5:
+    if Counter > opt/2:
         Cutoff = j
         Cutoff_Z = Platform_bins[Cutoff]
         

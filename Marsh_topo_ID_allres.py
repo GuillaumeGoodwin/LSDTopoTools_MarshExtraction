@@ -95,11 +95,17 @@ Nodata_value = -9999 # This is the value for empty DEM cells
 #These are the tide gauges next to the marshes we work on, sorted by Tidal Range
 Gauges=["BOU","FEL", "CRO", "SHE", "HEY", "HIN"] 
 Gauges=["HEY", "HIN"] 
-#Gauges=["WOR"] 
+Gauges=["SHE"] 
 
 # And these are the resolutions we work on, expressed in dm
 Resolutions=["1.0", "1.5", "2.0", "2.5", "3.0", "4.0", "5.0", "7.5", "10.0"] 
+Resolutions=["10.0"] 
 Resolutions_num = np.asarray(Resolutions).astype(float) /10.
+
+
+opt1_num = -2.0
+opt2_num = 0.85
+opt3_num = 8.0
 
 
 #------------------------------------------------------------------
@@ -193,7 +199,7 @@ for gauge in Gauges:
 
         print "Identifying the platform and scarps"
         DEM_work = np.copy(DEM)
-        Search_space, Scarps, Platform = MARSH_ID(DEM_work, Slope, Curvature, Metric2_tide, Nodata_value)
+        Search_space, Scarps, Platform = MARSH_ID(DEM_work, Slope, Curvature, Metric2_tide, Nodata_value, opt1_num, opt2_num, opt3_num)
         Platform_work = np.copy(Platform)
         Scarps[Scarps == 0] = Nodata_value
         
