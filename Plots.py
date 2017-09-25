@@ -296,7 +296,7 @@ plt.savefig('Output/Paper/0_Main_Fig1.png')"""
 
 #---------------------------------------------------------------------------
 # Figure 2 [1col]: This is a figure of the definition of the search space. It has examples of DEMxSlope (a) and the resulting search space (b) for an example
-"""fig=plt.figure(2, facecolor='White',figsize=[3.2,6.5])
+fig=plt.figure(2, facecolor='White',figsize=[3.2,6.5])
 
 matplotlib.rc('xtick', labelsize=8)
 matplotlib.rc('ytick', labelsize=8) 
@@ -305,7 +305,6 @@ matplotlib.rc('ytick', labelsize=8)
 i=0
 for gauge in Gauges:
     ax1 = plt.subplot2grid((12,5),(i,0),colspan=5, rowspan=1,axisbg='white')
-    #ax1bis = ax1.twinx()
     ax1.annotate('a%s.' % (i+1) , xy=(0.85,0.65), xycoords='axes fraction', fontsize=rcParams['font.size']-2, color='k') 
     
     majorLocatorx = MultipleLocator(0.02)
@@ -314,9 +313,9 @@ for gauge in Gauges:
     majorLocatory = MultipleLocator(0.1)
     majorFormattery = FormatStrFormatter('%d')
     ax1.yaxis.set_major_locator(majorLocatory)
-    
-    if i == 2:
-        ax1.set_ylabel('frequency', fontsize = 9)
+
+    ax1.set_ylabel('pdf', fontsize = 9)
+
     if i == 5:
         ax1.set_xlabel('P$^*$', fontsize = 9)
     if i != 5:
@@ -331,16 +330,10 @@ for gauge in Gauges:
     Search_space, Crossover, bins, hist, Inflexion_point = define_search_space (DEM, Slope, Nodata_value, -2.0)
     Search_space[Search_space==1] = Crossover[Search_space==1]
     
-    
     Rel_Slope = (np.amax(Slope)-np.amin(Slope[Slope > Nodata_value]))/np.amax(Slope)
     Rel_DEM = (np.amax(DEM)-np.amin(DEM[DEM > Nodata_value]))/np.amax(DEM)
-    
-    #bins_S, hist_S = Distribution (Rel_Slope, Nodata_value)
-    #bins_Z, hist_Z = Distribution (Rel_DEM, Nodata_value)
 
     ax1.plot(bins, hist, color=plt.cm.winter(0.1*Metrix_gauges[i,0]))
-    #ax1.plot(bins_S, hist_S, '--',color=plt.cm.winter(0.1*Metrix_gauges[i,0]))
-    #ax1bis.plot(bins_Z, hist_Z, '-.',color=plt.cm.winter(0.1*Metrix_gauges[i,0]))
     Inflexion_index = np.where(hist < Inflexion_point)
     Inflexion_index = Inflexion_index[0]
     Inflexion_bin = bins[min(Inflexion_index)-1]
@@ -413,7 +406,7 @@ hspace = 0.0   # the amount of height reserved for white space between subplots
 subplots_adjust(left=left, bottom=bottom, right=None, top=None, wspace=wspace, hspace=hspace)
 
 
-plt.savefig('Output/Paper/0_Main_Fig2.png')"""
+plt.savefig('Output/Paper/0_Main_Fig2.png')
 
 
 
@@ -566,7 +559,7 @@ gs = gridspec.GridSpec(3, 2)
 gs.update(bottom = 0.15,hspace=0.03,wspace = 0.03)
 
 # Set up annotations
-Annotations = ['S1.','S2.','S3.','S4.','S5.','S6.']
+Annotations = ['a1.','a2.','a3.','a4.','a5.','a6.']
 
 # Set up the values for the hillshade
 HS_min = [142,113,119,110,130,113]
@@ -648,7 +641,7 @@ matplotlib.rc('xtick', labelsize=9)
 matplotlib.rc('ytick', labelsize=8)
 
 width = 0.07
-filter_value = [0,1]
+filter_value = [1,2]
 
 
 
@@ -666,9 +659,9 @@ W_Sen_aggr = []
 
 for filt in filter_value:
 
-    ax1 = plt.subplot2grid((6,1),(filt,0),colspan=1, rowspan=1)
-    ax2 = plt.subplot2grid((6,1),(filt+2,0),colspan=1, rowspan=1)
-    ax3 = plt.subplot2grid((6,1),(filt+4,0),colspan=1, rowspan=1)
+    ax1 = plt.subplot2grid((6,1),(filt-1,0),colspan=1, rowspan=1)
+    ax2 = plt.subplot2grid((6,1),(filt+1,0),colspan=1, rowspan=1)
+    ax3 = plt.subplot2grid((6,1),(filt+3,0),colspan=1, rowspan=1)
 
     ax1.set_ylim(0.56,1.05)
     ax2.set_ylim(0.36,1.05)
@@ -688,7 +681,7 @@ for filt in filter_value:
     ax2.annotate('b%s.'%(filt), xy=(0.93,0.80), xycoords='axes fraction', fontsize=rcParams['font.size']-2, color='k') 
     ax3.annotate('c%s.'%(filt), xy=(0.93,0.80), xycoords='axes fraction', fontsize=rcParams['font.size']-2, color='k') 
 
-    if filt == 0:
+    if filt == 1:
         ax1.set_ylabel('Acc', fontsize = 9)
         ax2.set_ylabel('Rel', fontsize = 9)
         ax3.set_ylabel('Sen', fontsize = 9)
@@ -699,7 +692,7 @@ for filt in filter_value:
 
     ax1.set_xticklabels([])
     ax2.set_xticklabels([])
-    if filt == 1:
+    if filt == 2:
         ax3.set_xlabel('x,y resolution (m)', fontsize = 9)
 
     i = 0
@@ -708,7 +701,7 @@ for filt in filter_value:
         Reliability = np.zeros(len(Resolutions),dtype=np.float)
         Sensitivity = np.zeros(len(Resolutions),dtype=np.float)
         
-        if filt == 0:
+        if filt == 1:
             j=0
             for res in Resolutions:
                 with open ("Output/%s/%s_%s_Metrix_nofilter.pkl" % (gauge,gauge,res), 'rb') as input_file:
@@ -783,10 +776,10 @@ for gauge in Gauges:
       
     if i == 5:
         ax1.set_xlabel('Elevation (m)', fontsize = 9)   
-    ax1.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-    ax1.set_ylabel('f (%)', fontsize = 9)
+    ax1.yaxis.set_major_formatter(FormatStrFormatter('%.3f'))
+    ax1.set_ylabel('pdf', fontsize = 9)
 
-    ax1.annotate('a%s' %(i+1), xy=(0.05,0.925), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-2) 
+    ax1.annotate('a%s.' %(i+1), xy=(0.05,0.925), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-2) 
 
     # Load tidal data
     Metric1_tide, Metric2_tide, Metric3_tide, Subsample = Open_tide_stats ("Input/Tide/%s/%s_" % (gauge,gauge), gauge)
@@ -817,9 +810,9 @@ for gauge in Gauges:
     
     hist_z_copy = hist_z / Ratio
 
-    ax1.plot( bins_z, hist_z_copy*100, '-k', linewidth = 0.5)   
-    ax1.plot( bins_ref, hist_ref*100, '-r', linewidth = 0.8)   
-    ax1.fill_between( bins_M, -5, hist_M*100, color=plt.cm.winter(0.1*Metrix_gauges[i,0]), alpha = 0.8, linewidth = 0.1)
+    ax1.plot( bins_z, hist_z_copy, '-k', linewidth = 0.5)   
+    ax1.plot( bins_ref, hist_ref, '-r', linewidth = 0.8)   
+    ax1.fill_between( bins_M, -5, hist_M, color=plt.cm.winter(0.1*Metrix_gauges[i,0]), alpha = 0.8, linewidth = 0.1)
 
     
     # Set the ticks
@@ -829,7 +822,7 @@ for gauge in Gauges:
             A = bins_ref[x]
             break
     xmin = max(0,A)
-    ymax = max(max(hist_ref[hist_ref<0.2]),max(hist_M[hist_M<0.2]))*100
+    ymax = max(max(hist_ref[hist_ref<0.2]),max(hist_M[hist_M<0.2]))
     
     ax1.set_xlim (xmin = xmin)
     ax1.set_ylim (ymin = 0, ymax = ymax*1.05)
@@ -859,10 +852,10 @@ top = 0.0      # the top of the subplots of the figure
 wspace = 0.0   # the amount of width reserved for blank space between subplots
 hspace = 0.3   # the amount of height reserved for white space between subplots
     
-subplots_adjust(left=left, bottom=bottom, right=None, top=None, wspace=wspace, hspace=hspace)"""
+subplots_adjust(left=left, bottom=bottom, right=None, top=None, wspace=wspace, hspace=hspace)
 
 
-plt.savefig('Output/Paper/0_Main_Fig7.png')
+plt.savefig('Output/Paper/0_Main_Fig7.png')"""
 
 
 
@@ -889,8 +882,8 @@ ax1.set_ylim (0, 21)
 ax2.set_xlim (0, 10)
 ax2.set_ylim (0, 10)
 
-ax1.annotate('a', xy=(0.05,0.975), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-2) 
-ax2.annotate('b', xy=(0.05,0.925), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-2) 
+ax1.annotate('a.', xy=(0.05,0.975), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-2) 
+ax2.annotate('b.', xy=(0.05,0.925), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-2) 
 
 Fill_range = np.array([0.,200.])
 ax1.plot(Fill_range,Fill_range,'k', linewidth = 0.5)
@@ -991,21 +984,41 @@ plt.savefig('Output/Paper/0_Main_Fig8.png')"""
 
 #------------------------------------------------------------------------------
 # Figure 9 [2col]: temporal evolution
-fig=plt.figure(9, facecolor='White',figsize=[4.7,3.6])
+"""fig=plt.figure(9, facecolor='White',figsize=[4.7,5.6])
 
 # Set up the fonts and stuff
 matplotlib.rc('xtick', labelsize=8) 
 matplotlib.rc('ytick', labelsize=8)
 
-ax1 = plt.subplot2grid((4,4),(0,0),colspan=4, rowspan=4,axisbg='white')
+ax1 = plt.subplot2grid((3,2),(0,0),colspan=2, rowspan=2,axisbg='white')
+ax2 = plt.subplot2grid((3,2),(2,0),colspan=1, rowspan=1,axisbg='white')
+ax3 = plt.subplot2grid((3,2),(2,1),colspan=1, rowspan=1,axisbg='white')
 
-ax1.set_xlabel('x (m)', fontsize = 9)   
+ax1.annotate('a.', xy=(0.05,0.975), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-2) 
+ax2.annotate('b.', xy=(0.05,0.975), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-2) 
+ax3.annotate('c.', xy=(0.05,0.975), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-2) 
+
+ax1.set_xlabel('x (m)', fontsize = 9) 
+ax2.set_xlabel('x (m)', fontsize = 9) 
+ax3.set_xlabel('x (m)', fontsize = 9) 
+
+
 ax1.set_ylabel('y (m)', fontsize = 9)
+ax2.set_ylabel('y (m)', fontsize = 9)
 
-#ax1.annotate('a.', xy=(0.05,0.95), xycoords='axes fraction',horizontalalignment='left', verticalalignment='top', fontsize=rcParams['font.size']-2) 
+
+ax3.set_yticklabels([])
+
+
 
 ax1.xaxis.tick_top()
 ax1.xaxis.set_label_position('top')
+
+ax2.xaxis.tick_top()
+ax2.xaxis.set_label_position('top')
+
+ax3.xaxis.tick_top()
+ax3.xaxis.set_label_position('top')
 
 Dates = ["200703","200710"]
 d=0
@@ -1035,7 +1048,6 @@ Platform1[Platform1>0] = 1
 Platform2[Platform2>0] = 1
 Ref_Platform1[Ref_Platform1>0] = 1
 Ref_Platform2[Ref_Platform2>0] = 1
-
 
 
 Platform_change = np.zeros((len(Platform1), len(Platform1[0,:])), dtype = np.float)
@@ -1068,8 +1080,6 @@ Ref_Outline1_mask = np.ma.masked_where(Ref_Outline1 < 2, Ref_Outline1)
 Ref_Outline2_mask = np.ma.masked_where(Ref_Outline2 < 2, Ref_Outline2)
 
 
-
-
 Map_hs = ax1.imshow(Hillshade[5:120,50:245], interpolation='None', cmap=plt.cm.gray, vmin=94, vmax=231)
 Map_Marsh1 = ax1.imshow(DEM2[5:120,50:245]-DEM1[5:120,50:245], interpolation='None', cmap=plt.cm.seismic, vmin=-1.5, vmax=1.5, alpha=0.6)
 Map_Marsh1 = ax1.imshow(Ref_Outline1_mask[5:120,50:245], interpolation='None', cmap=plt.cm.winter, vmin=0, vmax=2, alpha=0.5)
@@ -1079,25 +1089,113 @@ Map_Marsh1 = ax1.imshow(Outline2_mask[5:120,50:245], interpolation='None', cmap=
 
 
 # Make the colourbar
-ax12 = fig.add_axes([0.11, 0.12, 0.79, 0.02])
+ax12 = fig.add_axes([0.11, 0.38, 0.79, 0.02])
 Diff_scheme = plt.cm.seismic; TF_norm = mpl.colors.Normalize(vmin=-1.5, vmax=1.5)
 cb1 = mpl.colorbar.ColorbarBase(ax12, cmap=Diff_scheme, norm=TF_norm, orientation='horizontal')
 cb1.set_label('Elevation difference (m)', fontsize = 9)
 
-  
-    
+
+
+
+
+# Calculate the lost marsh surface and volume
+
+Cut_DEM1 = DEM1 [5:120,50:245]
+Cut_DEM2 = DEM2 [5:120,50:245]
+
+Cut_platform1 = Platform1 [5:120,50:245]
+Cut_platform2 = Platform2 [5:120,50:245]
+
+Cut_Platform_change = np.zeros((len(Cut_platform1), len(Cut_platform1[0,:])), dtype = np.float)
+Cut_Ref_Platform_change = np.zeros((len(Cut_platform1), len(Cut_platform1[0,:])), dtype = np.float)
+
+
+Cut_ref_platform1 = Ref_Platform1 [5:120,50:245]
+Cut_ref_platform2 = Ref_Platform2 [5:120,50:245]
+
+Cut_Gain = np.where(Cut_platform1!=Cut_platform2)
+Cut_Loss = np.where(Cut_platform1!=Cut_platform2)
+
+Cut_Ref_Gain = np.where(Cut_ref_platform1!=Cut_ref_platform2)
+Cut_Ref_Loss = np.where(Cut_ref_platform1!=Cut_ref_platform2)
+
+
+
+Map_hs = ax2.imshow(Hillshade[5:120,50:245], interpolation='None', cmap=plt.cm.gray, vmin=94, vmax=231)
+Cut_Platform_change[Cut_Loss] = Cut_DEM2[Cut_Loss] - Cut_DEM1[Cut_Loss]
+Map_Marsh1 = ax2.imshow(Cut_Platform_change, interpolation='None', cmap=plt.cm.seismic, vmin = -2, vmax = 2, alpha=0.5)
+print np.count_nonzero(Cut_Platform_change)
+print np.sum(Cut_Platform_change)
+
+Cut_Platform_change[Cut_Gain] = Cut_DEM2[Cut_Gain] - Cut_DEM1[Cut_Gain]
+Map_Marsh1 = ax2.imshow(Cut_Platform_change, interpolation='None', cmap=plt.cm.seismic, vmin = -2, vmax = 2, alpha=0.5)
+
+print
+
+Map_hs = ax3.imshow(Hillshade[5:120,50:245], interpolation='None', cmap=plt.cm.gray, vmin=94, vmax=231)
+
+
+Cut_Ref_Platform_change[Cut_Ref_Loss] = Cut_DEM2[Cut_Ref_Loss] - Cut_DEM1[Cut_Ref_Loss]
+
+#Cut_Ref_Platform_change = Cut_Ref_Platform_change - Cut_Platform_change
+
+
+
+Map_Marsh1 = ax3.imshow(Cut_Ref_Platform_change, interpolation='None', cmap=plt.cm.seismic, vmin = -2, vmax = 2, alpha=0.5)
+print np.count_nonzero(Cut_Ref_Platform_change)
+print np.sum(Cut_Ref_Platform_change)
+
+Cut_Ref_Platform_change[Cut_Ref_Gain] = Cut_DEM2[Cut_Ref_Gain] - Cut_DEM1[Cut_Ref_Gain]
+Map_Marsh1 = ax3.imshow(Cut_Ref_Platform_change, interpolation='None', cmap=plt.cm.seismic, vmin = -2, vmax = 2, alpha=0.5)
+
+
+
+
+
+
+
+#Cut_Ref_Platform_change[Cut_Ref_Gain] = 1
+
+
+
+
+
+#print np.count_nonzero(Cut_Platform_change)
+#print np.count_nonzero(Cut_Ref_Platform_change)
+
+
+#print
+
+#print np.sum(Cut_Platform_change)
+#print np.sum(Cut_Ref_Platform_change)
+
+
+
+
+
+print
+
+#print len(Cut_Loss[0])
+#print len(Cut_Ref_Loss[0])
+
+#print
+
+#print len(Cut_platform1[0])* len(Cut_platform1[1])
+
+
+
 left  = 0.11  # the left side of the subplots of the figure
 right = 0.2    # the right side of the subplots of the figure
 bottom = 0.0   # the bottom of the subplots of the figure
 top = 0.0      # the top of the subplots of the figure
-wspace = 0.1   # the amount of width reserved for blank space between subplots
-hspace = 0.20   # the amount of height reserved for white space between subplots
+wspace = 0.05   # the amount of width reserved for blank space between subplots
+hspace = 0.1   # the amount of height reserved for white space between subplots
     
 subplots_adjust(left=left, bottom=bottom, right=None, top=None, wspace=wspace, hspace=hspace)
 
 
 
-plt.savefig('Output/Paper/0_Main_Fig9.png')
+plt.savefig('Output/Paper/0_Main_Fig9.png')"""
 
 
 
@@ -1108,10 +1206,7 @@ plt.savefig('Output/Paper/0_Main_Fig9.png')
 
 #---------------------------------------------------------------------------
 # Figure 10 [1col]: Performance results for different optimised parameters
-
-
-
-fig=plt.figure(10, facecolor='White',figsize=[4.7,5.0])
+"""fig=plt.figure(10, facecolor='White',figsize=[4.7,5.0])
 
 # Set up the fonts and stuff
 matplotlib.rc('xtick', labelsize=8) 
@@ -1157,13 +1252,13 @@ ax2.annotate('b.', xy=(0.93,0.88), xycoords='axes fraction', fontsize=rcParams['
 ax3.annotate('c.', xy=(0.93,0.88), xycoords='axes fraction', fontsize=rcParams['font.size']-2, color='k') 
 
 
-ax1.set_ylabel('Acc-Opt1', fontsize = 9)
-ax2.set_ylabel('Acc-Opt2', fontsize = 9)
-ax3.set_ylabel('Acc-Opt3', fontsize = 9)
+ax1.set_ylabel('Acc (''$Sp_{thresh}$)', fontsize = 9)
+ax2.set_ylabel('Acc (''$ZK_{thresh}$)', fontsize = 9)
+ax3.set_ylabel('Acc (''$rz_{thresh}$)', fontsize = 9)
 
 #ax1.set_xlabel('opt1 value ()', fontsize = 9)
 #ax2.set_xlabel('opt2 value ()', fontsize = 9)
-ax3.set_xlabel('optimisation parameter value (n/a)', fontsize = 9)
+ax3.set_xlabel('Parameter value (n/a)', fontsize = 9)
 
 
 
@@ -1258,7 +1353,7 @@ hspace = 0.2   # the amount of height reserved for white space between subplots
 subplots_adjust(left=left, bottom=bottom, right=None, top=None, wspace=None, hspace=hspace)
 
 
-plt.savefig('Output/Paper/0_Main_Fig10.png')
+plt.savefig('Output/Paper/0_Main_Fig10.png')"""
 
 
 STOP
