@@ -684,7 +684,12 @@ def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value,opt):
     Platform = np.copy(Marsh)
     Platform[Platform > 0] = DEM [Platform > 0]
     Platform_bins, Platform_hist = Distribution(Platform,0)
+    
+    # If you want to see the intermediary distribution
+    cPickle.dump(Platform_bins, open("Output/BOU/BOU_Bins_nocutoff.pkl", "wb"))
+    cPickle.dump(Platform_hist, open("Output/BOU/BOU_Hist_nocutoff.pkl", "wb"))
 
+    
     #1. Find the highest and biggest local maximum of frequency distribution
     
     # Initialize Index
@@ -721,7 +726,17 @@ def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value,opt):
     
     Marsh[Platform<Cutoff_Z] = 0
 
+    
+    
+    #This is where you define the cutoff spot!
+    Platform = np.copy(Marsh)
+    Platform[Platform > 0] = DEM [Platform > 0]
+    Platform_bins, Platform_hist = Distribution(Platform,0)
    
+    # If you want to see the intermediary distribution
+    cPickle.dump(Platform_bins, open("Output/BOU/BOU_Bins_1cutoff.pkl", "wb"))
+    cPickle.dump(Platform_hist, open("Output/BOU/BOU_Hist_1cutoff.pkl", "wb"))
+    
     
     print " ... Fill high gaps ..."
     Search_marsh_condition = np.zeros((len(DEM), len(DEM[0,:])), dtype = np.float)
@@ -802,18 +817,31 @@ def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value,opt):
     
     
     
-    
-    
+  
     
     # Some of our platforms are patchy. Try filling them now that we have added the scarps
-    
-    
+
     print " ... Fill high gaps ..."
     Search_marsh_condition = np.zeros((len(DEM), len(DEM[0,:])), dtype = np.float)
     Search_marsh = np.where (DEM >= Platform_bins[Index])
     Search_marsh_condition [Search_marsh] = 1
     Search_marsh_2 = np.where (np.logical_and(Marsh == 0, Search_marsh_condition == 1))
     Marsh[Search_marsh_2] = 3
+    
+    
+    
+    #This is where you define the cutoff spot!
+    Platform = np.copy(Marsh)
+    Platform[Platform > 0] = DEM [Platform > 0]
+    Platform_bins, Platform_hist = Distribution(Platform,0)
+   
+    # If you want to see the intermediary distribution
+    cPickle.dump(Platform_bins, open("Output/BOU/BOU_Bins_2cutoff.pkl", "wb"))
+    cPickle.dump(Platform_hist, open("Output/BOU/BOU_Hist_2cutoff.pkl", "wb"))
+    
+    
+    
+    
     
     for Iteration in np.arange(0,10,1):
         Counter = 110
@@ -842,8 +870,19 @@ def Fill_high_ground (DEM, Peaks, Tidal_metric, Nodata_value,opt):
     Platform[Platform > 0] = DEM [Platform > 0]
     Marsh[Platform<Cutoff_Z] = 0
     
-
     
+    
+    #This is where you define the cutoff spot!
+    Platform = np.copy(Marsh)
+    Platform[Platform > 0] = DEM [Platform > 0]
+    Platform_bins, Platform_hist = Distribution(Platform,0)
+   
+    # If you want to see the intermediary distribution
+    cPickle.dump(Platform_bins, open("Output/BOU/BOU_Bins_3cutoff.pkl", "wb"))
+    cPickle.dump(Platform_hist, open("Output/BOU/BOU_Hist_3cutoff.pkl", "wb"))
+    
+    
+    STOP
     
     
     Marsh[DEM == Nodata_value] = Nodata_value
@@ -1475,20 +1514,14 @@ def MARSH_ID (DEM, Slope, Curvature, Metric2, Nodata_value, opt1, opt2, opt3):
 def Confusion (Subject, Reference, Nodata_value):
     Height = len(Subject[:,0]); Width = len(Subject[0,:])
     Height_R = len(Reference[:,0]); Width_R = len(Reference[0,:])
-    
-    
-    
+
     print Height, Width
     print Height_R, Width_R
-    
-    
+     
     H = min (Height, Height_R)
     W = min (Width, Width_R)
-    
-    
 
     Confusion_matrix = Nodata_value*np.ones((Height, Width), dtype = np.float)
-
 
     Subject_marsh = np.where (np.logical_and(Subject != 0, Subject != Nodata_value))
     Reference_marsh = np.where (np.logical_and(Reference != 0, Reference != Nodata_value))
